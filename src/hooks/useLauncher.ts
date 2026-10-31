@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
 
+import { OVERLAY_VISIBILITY_EVENT } from "../constants";
 import { api } from "../lib/api";
 import { toErrorMessage } from "../lib/format";
 import { isTauri, PREVIEW_NOTICE } from "../lib/tauri-env";
@@ -8,6 +10,10 @@ import type {
   BusyAction,
   DebugOption,
   DebugState,
+  DumpFile,
+  InjectMode,
+  LaunchMode,
+  LaunchSettings,
   LoaderUpdateInfo,
   LogEntry,
   LogLevel,
@@ -20,9 +26,13 @@ import type {
 const EMPTY_STATUS: Status = {
   gamePath: null,
   installed: false,
+  injected: false,
+  modLoaded: false,
+  legacyResident: false,
   gameRunning: false,
   installedAt: null,
   nsmmiVersion: null,
+  loaderVersion: "",
 };
 
 const MAX_LOGS = 400;
@@ -49,9 +59,13 @@ function sameStatus(a: Status, b: Status): boolean {
   return (
     a.gamePath === b.gamePath &&
     a.installed === b.installed &&
+    a.injected === b.injected &&
+    a.modLoaded === b.modLoaded &&
+    a.legacyResident === b.legacyResident &&
     a.gameRunning === b.gameRunning &&
     a.installedAt === b.installedAt &&
-    a.nsmmiVersion === b.nsmmiVersion
+    a.nsmmiVersion === b.nsmmiVersion &&
+    a.loaderVersion === b.loaderVersion
   );
 }
 
@@ -72,7 +86,13 @@ export function useLauncher() {
   const [fontSize, setFontSizeState] = useState(14);
   const [autoUpdate, setAutoUpdateState] = useState(false);
   const [loaderUpdate, setLoaderUpdate] = useState<LoaderUpdateInfo | null>(null);
+  const [launchMode, setLaunchModeState] = useState<LaunchMode>("direct");
+  const [launchTimeout, setLaunchTimeoutState] = useState(30);
+  const [injectMode, setInjectModeState] = useState<InjectMode>("direct");
+  const [titlebarLight, setTitlebarLight] = useState(false);
   const [debug, setDebug] = useState<DebugState | null>(null);
+  const [dumps, setDumps] = useState<DumpFile[]>([]);
+  const [overlayVisible, setOverlayVisible] = useState(false);
   const [busy, setBusy] = useState<BusyAction>(null);
 
   // 事件回调里读取最新设置值
@@ -80,6 +100,7 @@ export function useLauncher() {
   const fontSizeRef = useRef(14);
   const autoUpdateRef = useRef(false);
   const debugRef = useRef<DebugState | null>(null);
+  const wallpaperRef = useRef<string | null>(null);
 
   const loadUiSettings = useCallback((next: UiSettings) => {
     uiThemeRef.current = next.theme;
@@ -88,6 +109,18 @@ export function useLauncher() {
     setUiThemeState(next.theme);
     setFontSizeState(next.fontSize);
     setAutoUpdateState(next.autoUpdate);
+  }, []);
+
+  /** 采样壁纸标题栏区域亮度，决定标题栏用深色还是浅色图标 */
+  const refreshTitlebarTone = useCallback(() => {
+    if (!wallpaperRef.current) {
+      setTitlebarLight(false);
+      return;
+    }
+    api
+      .wallpaperTitlebarLight()
+      .then(setTitlebarLight)
+      .catch(() => setTitlebarLight(false));
   }, []);
 
   // 事件回调里读取最新路径；用 effect 同步而非渲染期写 ref（并发渲染安全）
@@ -196,6 +229,80 @@ export function useLauncher() {
     [run, push],
   );
 
+  /** ShaderFixes dump 列表（随目录校验刷新） */
+  const refreshDumps = useCallback(async () => {
+    const gameRoot = pathRef.current.trim();
+    if (!gameRoot) {
+      setDumps([]);
+      return;
+    }
+    try {
+      setDumps(await api.listDumps(gameRoot));
+    } catch {
+      setDumps([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pathValid === true) {
+      void refreshDumps();
+    } else {
+      setDumps([]);
+    }
+  }, [path, pathValid, refreshDumps]);
+
+  const saveModelNote = useCallback(
+    (file: string, note: string) => {
+      return run("note", async () => {
+        const gameRoot = pathRef.current.trim();
+        if (!gameRoot) {
+          return;
+        }
+        try {
+          setDumps(await api.saveModelNote(gameRoot, file, note));
+          push(`已为 ${file} 备注为「${note}」并创建归档文件夹`, "ok");
+        } catch (error) {
+          push(`保存备注失败: ${toErrorMessage(error)}`, "error");
+        }
+      });
+    },
+    [run, push],
+  );
+
+  /** 显隐调试悬浮窗 */
+  const toggleOverlay = useCallback(() => {
+    return api
+      .toggleOverlay()
+      .then(setOverlayVisible)
+      .catch((error: unknown) => {
+        push(`悬浮窗操作失败: ${toErrorMessage(error)}`, "warn");
+      });
+  }, [push]);
+
+  // 悬浮窗自身隐藏时同步主窗口开关状态（Rust 侧广播显隐事件）
+  useEffect(() => {
+    if (!isTauri) {
+      return;
+    }
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<boolean>(OVERLAY_VISIBILITY_EVENT, (event) => {
+      setOverlayVisible(event.payload);
+    })
+      .then((fn) => {
+        if (disposed) {
+          fn();
+          return;
+        }
+        unlisten = fn;
+      })
+      .catch(() => undefined);
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
   // 输入停止后校验目录
   useEffect(() => {
     const value = path.trim();
@@ -227,7 +334,7 @@ export function useLauncher() {
         return;
       }
 
-      const [appInfo, current, wallpaperPath, ui] = await Promise.all([
+      const [appInfo, current, wallpaperPath, ui, launch, inject] = await Promise.all([
         api.appInfo().catch((error: unknown) => {
           push(toErrorMessage(error), "error");
           return null;
@@ -238,9 +345,21 @@ export function useLauncher() {
         }),
         api.getWallpaper().catch(() => null),
         api.getUiSettings().catch(() => null),
+        api.getLaunchSettings().catch(() => null),
+        api.getInjectMode().catch(() => null),
       ]);
 
+      if (launch) {
+        setLaunchModeState(launch.mode);
+        setLaunchTimeoutState(launch.timeout);
+      }
+      if (inject === "hook" || inject === "direct") {
+        setInjectModeState(inject);
+      }
+
+      wallpaperRef.current = wallpaperPath;
       setWallpaper(wallpaperPath);
+      refreshTitlebarTone();
       if (ui) {
         loadUiSettings(ui);
         // 自动更新开启时后台检查并静默更新 3DMigoto
@@ -379,22 +498,111 @@ export function useLauncher() {
     });
   }, [run, push, pushMany, refreshStatus, loadMods, refreshDebug]);
 
-  const launchGame = useCallback(() => {
-    return run("launch", async () => {
+  /**
+   * 启动游戏
+   *
+   * 注入 3DMigoto 后启动，游戏退出后自动还原本版。
+   */
+  const launchGame = useCallback(
+    () => {
+      return run("launch", async () => {
+        const gameRoot = pathRef.current.trim();
+        if (!gameRoot) {
+          push("请先选择游戏目录", "warn");
+          return;
+        }
+        push("正在启动游戏（注入 3DMigoto）", "info");
+        try {
+          const outcome = await api.launchGame(gameRoot);
+          pushMany(outcome.lines, "ok");
+          if (outcome.hint) {
+            push(outcome.hint, "warn");
+          }
+          await refreshStatus();
+        } catch (error) {
+          push(`启动失败: ${toErrorMessage(error)}`, "error");
+        }
+      });
+    },
+    [run, push, pushMany, refreshStatus],
+  );
+
+  /** 取消注入：清掉注入状态并清理旧版残留 */
+  const restoreLoader = useCallback(() => {
+    return run("restore", async () => {
       const gameRoot = pathRef.current.trim();
       if (!gameRoot) {
         push("请先选择游戏目录", "warn");
         return;
       }
       try {
-        const lines = await api.launchGame(gameRoot);
-        pushMany(lines, "ok");
+        pushMany(await api.restoreLoader(gameRoot), "ok");
         await refreshStatus();
       } catch (error) {
-        push(`启动失败: ${toErrorMessage(error)}`, "error");
+        push(`取消注入失败: ${toErrorMessage(error)}`, "error");
       }
     });
   }, [run, push, pushMany, refreshStatus]);
+
+  /** 在桌面创建「快速启动」快捷方式（双击即自动执行启动注入） */
+  const createDesktopShortcut = useCallback(() => {
+    return run("shortcut", async () => {
+      try {
+        const target = await api.createDesktopShortcut();
+        push(`已在桌面创建快捷方式：${target}`, "ok");
+        push("双击快捷方式会打开 NSMMI 并自动执行「启动游戏」", "info");
+      } catch (error) {
+        push(`创建快捷方式失败: ${toErrorMessage(error)}`, "error");
+      }
+    });
+  }, [run, push]);
+
+  // 桌面快捷方式带 --launch 启动：Rust 侧发事件，这里自动执行「启动游戏」
+  useEffect(() => {
+    if (!isTauri) {
+      return;
+    }
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen("auto-launch", () => {
+      void launchGame();
+    })
+      .then((fn) => {
+        if (disposed) {
+          fn();
+          return;
+        }
+        unlisten = fn;
+      })
+      .catch(() => undefined);
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [launchGame]);
+
+  /** 保存启动方式 / 超时（本地立即生效 + 异步持久化） */
+  const updateLaunchSettings = useCallback(
+    (next: LaunchSettings) => {
+      setLaunchModeState(next.mode);
+      setLaunchTimeoutState(next.timeout);
+      api.setLaunchSettings(next.mode, next.timeout).catch((error: unknown) => {
+        push(`保存启动设置失败: ${toErrorMessage(error)}`, "warn");
+      });
+    },
+    [push],
+  );
+
+  /** 保存注入方式（Direct / Hook），下次启动生效 */
+  const updateInjectMode = useCallback(
+    (mode: InjectMode) => {
+      setInjectModeState(mode);
+      api.setInjectMode(mode).catch((error: unknown) => {
+        push(`保存注入方式失败: ${toErrorMessage(error)}`, "warn");
+      });
+    },
+    [push],
+  );
 
   const toggleMod = useCallback(
     (name: string) => {
@@ -459,7 +667,9 @@ export function useLauncher() {
           return;
         }
         await api.setWallpaper(picked);
+        wallpaperRef.current = picked;
         setWallpaper(picked);
+        refreshTitlebarTone();
         push("已更新背景图", "ok");
       } catch (error) {
         push(toErrorMessage(error), "warn");
@@ -471,7 +681,9 @@ export function useLauncher() {
     return run("wallpaper", async () => {
       try {
         await api.setWallpaper(null);
+        wallpaperRef.current = null;
         setWallpaper(null);
+        setTitlebarLight(false);
         push("已恢复默认背景");
       } catch (error) {
         push(toErrorMessage(error), "warn");
@@ -589,12 +801,20 @@ export function useLauncher() {
     install,
     uninstall,
     launchGame,
+    restoreLoader,
+    createDesktopShortcut,
+    launchMode,
+    launchTimeout,
+    injectMode,
+    updateLaunchSettings,
+    updateInjectMode,
     toggleMod,
     openModsDir,
     openShaderFixesDir,
     openGameDir,
     openExternal,
     wallpaper,
+    titlebarLight,
     chooseWallpaper,
     clearWallpaper,
     uiTheme,
@@ -608,5 +828,10 @@ export function useLauncher() {
     performLoaderUpdate,
     debug,
     toggleDebug,
+    dumps,
+    refreshDumps,
+    saveModelNote,
+    overlayVisible,
+    toggleOverlay,
   };
 }

@@ -51,18 +51,20 @@ body {
   color: #d48806;
 }
 
-/* 无边框窗口的自定义标题栏（细条） */
+/* 无边框窗口的自定义标题栏：透明覆盖层，三栏底色延伸到窗口顶 */
 .titlebar {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
-  height: 34px;
+  height: 30px;
   padding: 0 2px 0 10px;
-  background: #fff;
-  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+  background: transparent;
+  border-bottom: none;
 }
 
 .titlebar.overlay {
@@ -70,36 +72,25 @@ body {
   border-bottom-color: transparent;
 }
 
-.titlebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  pointer-events: none;
+
+/* 页面内容不套卡：按功能定位直接铺在内容区上，分区 = 节标题 + 细分隔线 */
+.page-wrap > .ant-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-.titlebar-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: linear-gradient(135deg, #4096ff, #1668dc);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
+.page-wrap > .ant-card > .ant-card-head {
+  min-height: 44px;
+  background: transparent;
+  border-bottom: 1px solid var(--hairline);
 }
 
-.titlebar-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: rgba(0, 0, 0, 0.88);
-}
-
-.titlebar.overlay .titlebar-title {
-  color: #fff;
+/* 弹窗同样玻璃化，保持一致 */
+.app-shell.has-wallpaper .ant-modal .ant-modal-content {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
 }
 
 .titlebar-actions {
@@ -131,17 +122,42 @@ body {
 }
 
 .titlebar-btn:focus-visible {
-  outline: 2px solid #1668dc;
+  outline: 2px solid currentColor;
   outline-offset: -2px;
 }
 
 .titlebar.overlay .titlebar-btn {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .titlebar.overlay .titlebar-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
+}
+
+/* 壁纸顶部偏浅时切深色按钮，保证对比度 */
+.titlebar.overlay.adaptive-dark .titlebar-btn {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.titlebar.overlay.adaptive-dark .titlebar-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+/* 置顶激活态：亮底用品牌蓝，壁纸亮区用蓝底白钉 */
+.titlebar-btn.active {
+  color: var(--accent, #1677ff);
+}
+
+.titlebar.overlay .titlebar-btn.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.titlebar.overlay.adaptive-dark .titlebar-btn.active {
+  background: rgba(22, 119, 255, 0.15);
+  color: #0958d9;
 }
 
 .titlebar-btn.window {
@@ -149,19 +165,20 @@ body {
   padding: 0;
 }
 
+/* 置顶激活：图钉"钉下去"——实心 + 旋转 45°，与未置顶的斜针明显区分 */
+.titlebar-btn.active .anticon {
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
 .titlebar-btn.window.close:hover {
   background: #e81123;
   color: #fff;
 }
 
-/* 深色主题：标题栏与侧栏跟随暗色 */
+/* 深色主题：标题栏跟随暗色（透明覆盖层，底色由三栏提供） */
 .app-shell.theme-dark {
   background: #141414;
-}
-
-.app-shell.theme-dark .titlebar {
-  background: #1f1f1f;
-  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .app-shell.theme-dark .titlebar-title {
@@ -177,101 +194,6 @@ body {
   color: #fff;
 }
 
-.app-shell.theme-dark .sider {
-  background: #141414;
-  border-right-color: rgba(255, 255, 255, 0.06);
-}
-
-.app-shell.theme-dark .sider-trigger {
-  border-top-color: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* 主体：左侧菜单 + 内容区（位于窗口级压暗层之上） */
-.app-body {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.sider {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  width: 200px;
-  background: #fff;
-  border-right: 1px solid rgba(5, 5, 5, 0.06);
-  transition: width 0.2s ease;
-  overflow: hidden;
-}
-
-/* 壁纸模式下侧栏完全融入壁纸：无底色无边框，仅图标悬浮 */
-.app-shell.has-wallpaper .sider {
-  background: transparent;
-  border-right: none;
-}
-
-.app-shell.has-wallpaper .sider-menu {
-  background: transparent;
-}
-
-.app-shell.has-wallpaper .sider-menu .ant-menu-item {
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* 图标加投影，保证亮暗壁纸上都清晰 */
-.app-shell.has-wallpaper .sider-menu .ant-menu-item .anticon {
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
-}
-
-.app-shell.has-wallpaper .sider-menu .ant-menu-item:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-}
-
-/* 选中项：白色胶囊 + 蓝图标 */
-.app-shell.has-wallpaper .sider-menu .ant-menu-item-selected {
-  background: rgba(255, 255, 255, 0.92);
-  color: #1668dc;
-}
-
-.app-shell.has-wallpaper .sider-trigger {
-  color: rgba(255, 255, 255, 0.85);
-  border-top: none;
-}
-
-.app-shell.has-wallpaper .sider-trigger.ant-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-}
-
-.sider.collapsed {
-  width: 64px;
-}
-
-.sider-menu {
-  flex: 1;
-  border-inline-end: none !important;
-}
-
-.sider-trigger {
-  flex-shrink: 0;
-  width: 100%;
-  border-top: 1px solid rgba(5, 5, 5, 0.06);
-  border-radius: 0;
-}
-
-.app-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
 
 /* 普通页面容器：纵向卡片流 */
 .page-wrap {
@@ -290,58 +212,31 @@ body {
   overscroll-behavior: contain;
 }
 
+/* 单卡片页面：卡片撑满内容区，列表在卡片内部滚动 */
+.page-wrap > .ant-card.page-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.page-fill > .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 /* 调试页：工具行 + 日志面板 */
 .page-col {
   padding-bottom: 12px;
 }
 
 /* 主页 */
-.home-view {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* 仅在底部叠轻渐变保证文字可读，中部不遮壁纸；窗口级铺满全宽 */
-.app-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.38),
-    rgba(0, 0, 0, 0.1) 28%,
-    transparent 48%
-  );
-}
-
-.home-content {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  padding: 32px 40px;
-}
-
-/* 启动按钮：任何壁纸/状态下都清晰可见 */
+/* 启动按钮：压在壁纸 / 深色底上时保持醒目 */
 .home-launch.ant-btn-primary:not(:disabled) {
   box-shadow: 0 6px 20px rgba(22, 104, 220, 0.4);
-}
-
-.home-launch.ant-btn-primary:disabled {
-  background: rgba(255, 255, 255, 0.92) !important;
-  color: rgba(0, 0, 0, 0.35) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-}
-
-.home-bottom {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
 }
 
 /* 控制台：深色面板 */
@@ -401,6 +296,45 @@ body {
   contain-intrinsic-size: auto 56px;
 }
 
+/* 卡片内空态：垂直居中，图标 + 标题 + 一句说明 */
+.fill-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-height: 220px;
+  padding: 24px;
+  text-align: center;
+}
+
+.fill-empty .ant-empty {
+  margin-bottom: 10px;
+}
+
+.fill-empty-title {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.fill-empty-hint {
+  margin: 0;
+  max-width: 320px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.app-shell.theme-dark .fill-empty-title {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.app-shell.theme-dark .fill-empty-hint {
+  color: rgba(255, 255, 255, 0.42);
+}
+
 /* 滚动条 */
 ::-webkit-scrollbar {
   width: 10px;
@@ -431,6 +365,570 @@ body {
 
 .scroll-dark::-webkit-scrollbar-thumb:hover {
   background-color: #4d5b5c;
+}
+
+/* ===== 游戏内按键（可视化键帽） ===== */
+
+.gamekey-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.gamekey-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gamekey-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.gamekey-hint {
+  font-size: 11px;
+  color: rgba(127, 127, 127, 0.95);
+}
+
+.gamekey-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.gamekey-group-name {
+  font-size: 11px;
+  color: rgba(127, 127, 127, 0.95);
+}
+
+.gamekey-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 键帽按钮：外观接近实体按键 */
+.gamekey {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 8px 5px 5px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.08);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.08s;
+}
+
+.gamekey:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.16);
+  border-color: rgba(127, 127, 127, 0.45);
+}
+
+.gamekey:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.gamekey:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gamekey-cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 52px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #4a505a, #2b3037);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gamekey-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.gamekey-label {
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gamekey-desc {
+  font-size: 11px;
+  line-height: 1.3;
+  color: rgba(127, 127, 127, 0.95);
+}
+
+.gamekey-msg {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  user-select: text;
+}
+
+.gamekey-msg.ok {
+  color: #52c41a;
+}
+
+.gamekey-msg.error {
+  color: #ff4d4f;
+}
+
+/* 紧凑模式（悬浮窗内） */
+.gamekey-panel--compact {
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.gamekey-panel--compact .gamekey-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 5px;
+}
+
+.gamekey-panel--compact .gamekey-cap {
+  min-width: 46px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+/* ===== 自绘悬停提示（绕开 antd v6 弹层定位缺陷） ===== */
+/* 气泡 = 界面卡片同材质：浅色白底黑字，深色/悬浮窗深灰白字，半透明毛玻璃 */
+.safe-tooltip {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  max-width: 280px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--safe-tip-bg, rgba(255, 255, 255, 0.98));
+  color: var(--safe-tip-fg, rgba(0, 0, 0, 0.88));
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: var(--safe-tip-shadow, 0 4px 14px rgba(0, 0, 0, 0.16));
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  animation: safe-tooltip-in 0.12s ease;
+}
+
+.app-shell.theme-dark .safe-tooltip,
+.overlay-root .safe-tooltip {
+  --safe-tip-bg: rgba(46, 48, 54, 0.94);
+  --safe-tip-fg: rgba(255, 255, 255, 0.92);
+  --safe-tip-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* 小箭头：与气泡同底色的 45° 小方块，按方向贴边 */
+.safe-tooltip::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: inherit;
+  border-radius: 1.5px;
+  transform: rotate(45deg);
+}
+
+.safe-tooltip-placement-right::after {
+  left: -3.5px;
+  top: 50%;
+  margin-top: -4.5px;
+}
+
+.safe-tooltip-placement-left::after {
+  right: -3.5px;
+  top: 50%;
+  margin-top: -4.5px;
+}
+
+.safe-tooltip-placement-top::after {
+  bottom: -3.5px;
+  left: 50%;
+  margin-left: -4.5px;
+}
+
+.safe-tooltip-placement-bottom::after {
+  top: -3.5px;
+  left: 50%;
+  margin-left: -4.5px;
+}
+
+@keyframes safe-tooltip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== 调试悬浮窗（独立透明置顶窗口） ===== */
+
+body.overlay-mode {
+  background: transparent;
+  overflow: hidden;
+}
+
+.overlay-root {
+  display: flex;
+  height: 100%;
+  padding: 6px;
+}
+
+.overlay-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  /* 关键：允许在窄窗口内收缩，否则内容最小宽度会撑破窗口造成裁切 */
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  /* 提高不透明度：避免主窗口文字透出造成"双层内容"干扰 */
+  background: rgba(16, 18, 22, 0.94);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.overlay-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 拖拽区：与右侧按钮区分离，保证按钮点击不被拖拽手势吞掉 */
+.overlay-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: move;
+}
+
+.overlay-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52c41a;
+  box-shadow: 0 0 6px rgba(82, 196, 26, 0.8);
+}
+
+.overlay-title {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overlay-shortcut {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.overlay-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.overlay-head-actions .ant-btn {
+  height: 24px;
+  padding: 0 6px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.overlay-head-actions .ant-btn:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.overlay-hide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.overlay-hide:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.overlay-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 8px 10px 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 开关区 */
+.overlay-switches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.overlay-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.overlay-switch-row .ant-switch {
+  flex-shrink: 0;
+}
+
+.overlay-switch-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.overlay-switch-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.overlay-switch-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.overlay-hint,
+.overlay-warn {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.overlay-hint {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.overlay-warn {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(250, 173, 20, 0.14);
+  color: #f0b429;
+}
+
+/* 日志区 */
+.overlay-log-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.overlay-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.overlay-log-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.overlay-log-count {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.overlay-log-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.overlay-log-actions .ant-btn {
+  height: 20px;
+  padding: 0 5px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.overlay-log-actions .ant-btn:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.overlay-log {
+  flex: 1 1 120px;
+  min-height: 72px;
+  max-height: 260px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  user-select: text;
+}
+
+.overlay-line {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  break-words: anywhere;
+}
+
+.overlay-line.warn {
+  color: #e0c377;
+}
+
+.overlay-line.error {
+  color: #ff7875;
+}
+
+.overlay-empty {
+  margin: 0;
+  padding: 4px 0;
+  color: rgba(255, 255, 255, 0.32);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* 备注区：显式给出 flex 基准，避免 antd 的 width:100% 撑破窄窗口 */
+.overlay-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.overlay-note .ant-select {
+  flex: 0 1 168px;
+  width: auto;
+  min-width: 0;
+}
+
+.overlay-note .ant-input-affix-wrapper,
+.overlay-note .ant-input {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.overlay-note .ant-btn {
+  flex: 0 0 auto;
+}
+
+/* 悬浮窗内 antd 控件紧凑化 */
+.overlay-body .ant-btn,
+.overlay-body .ant-select,
+.overlay-body .ant-input,
+.overlay-body .ant-input-affix-wrapper {
+  font-size: 12px;
+}
+
+.overlay-body .ant-select-selector {
+  font-size: 12px;
+}
+
+.overlay-msg {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  user-select: text;
+}
+
+.overlay-msg.ok {
+  color: #95de64;
+}
+
+.overlay-msg.error {
+  color: #ff7875;
 }
 
 @media (prefers-reduced-motion: reduce) {

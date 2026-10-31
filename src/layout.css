@@ -1,0 +1,612 @@
+/* 三栏骨架：图标栏（rail）+ 导航面板（panel）+ 内容区（stage）
+   参考桌面 IM 的经典布局，浅色为默认，深色主题与自定义壁纸各自适配 */
+
+.app-shell {
+  --rail-w: 62px;
+  --panel-w: 246px;
+  /* 品牌色（选中态）与状态色（就绪 / 生效）分开，不与 antd 主色冲突 */
+  --accent: #1677ff;
+  --accent-soft: rgba(22, 119, 255, 0.12);
+  --accent-ink: #0958d9;
+  --ok: #07c160;
+  --ok-soft: rgba(7, 193, 96, 0.16);
+  --rail-fg: rgba(0, 0, 0, 0.55);
+  --rail-fg-strong: rgba(0, 0, 0, 0.88);
+  --hover: rgba(0, 0, 0, 0.055);
+  --panel-fg: rgba(0, 0, 0, 0.72);
+  --muted: rgba(0, 0, 0, 0.42);
+  --hairline: rgba(0, 0, 0, 0.07);
+  --rail-bg: rgba(0, 0, 0, 0.045);
+  --panel-bg: #f7f8fa;
+  --stage-bg: #ffffff;
+  background: #e9ebef;
+}
+
+.app-shell.theme-dark {
+  --accent: #4096ff;
+  --accent-soft: rgba(64, 150, 255, 0.2);
+  --accent-ink: #69b1ff;
+  --ok: #3ddc84;
+  --ok-soft: rgba(61, 220, 132, 0.22);
+  --rail-fg: rgba(255, 255, 255, 0.6);
+  --rail-fg-strong: rgba(255, 255, 255, 0.9);
+  --hover: rgba(255, 255, 255, 0.08);
+  --panel-fg: rgba(255, 255, 255, 0.78);
+  --muted: rgba(255, 255, 255, 0.42);
+  --hairline: rgba(255, 255, 255, 0.08);
+  --rail-bg: rgba(255, 255, 255, 0.02);
+  --panel-bg: rgba(255, 255, 255, 0.04);
+  --stage-bg: #17181c;
+  background: #16171a;
+}
+
+/* 标题栏拖拽区（透明覆盖层，见 styles.css） */
+.titlebar-drag {
+  flex: 1;
+  align-self: stretch;
+}
+
+/* 主体三栏连成一体（参考微信）：图标栏固定宽 + 中间栏（可拖宽）+ 内容栏 */
+.shell-main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 侧边区：图标栏与导航面板共用一块底色，与内容栏以分界线相接 */
+.sidebar {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  min-height: 0;
+  background: var(--panel-bg);
+}
+
+/* ---------- 图标栏 ---------- */
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  width: var(--rail-w);
+  /* 顶部让出标题栏（透明覆盖层），底色一直延伸到窗口顶 */
+  padding: 38px 0 10px;
+  background: var(--rail-bg);
+  /* 图标栏与导航面板之间的细分割线 */
+  border-right: 1px solid var(--hairline);
+  /* 壁纸模式下 .rail 自带 backdrop-filter（层叠上下文），内部 z-index:3000 的
+     提示气泡只在栏内生效，会被 DOM 靠后、同样有 backdrop-filter 的 .panel 盖住；
+     抬高 .rail 层级让气泡越过中间栏显示 */
+  position: relative;
+  z-index: 2;
+}
+
+.rail-logo {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  margin-bottom: 14px;
+  border: none;
+  border-radius: 11px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rail-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rail-logo:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.rail-logo:focus-visible,
+.rail-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rail-nav,
+.rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rail-bottom {
+  margin-top: auto;
+}
+
+.rail-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rail-fg);
+  font-size: 19px;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.rail-btn:hover {
+  background: var(--hover);
+  color: var(--rail-fg-strong);
+}
+
+.rail-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.rail-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* ---------- 导航面板 ---------- */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  width: var(--panel-w);
+  min-height: 0;
+  /* 顶部让出标题栏拖拽区 */
+  padding: 36px 10px 10px;
+  /* 与内容区的唯一分界线画在面板右缘（玻璃区到此为止） */
+  border-right: 1px solid var(--hairline);
+  /* 从首页切进内容页时面板淡入（挂载时播放一次） */
+  animation: panel-in 0.24s ease;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.panel-search.ant-input-affix-wrapper {
+  flex-shrink: 0;
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.045);
+  box-shadow: none;
+  color: var(--panel-fg);
+  transition: background 0.15s ease;
+}
+
+.panel-search.ant-input-affix-wrapper:hover,
+.panel-search.ant-input-affix-wrapper-focused {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.app-shell.theme-dark .panel-search.ant-input-affix-wrapper {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-search .ant-input {
+  background: transparent;
+  font-size: 12.5px;
+}
+
+.panel-search .anticon {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 分组列表 */
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.panel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.panel-group-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.panel-group-head:hover {
+  color: var(--panel-fg);
+}
+
+/* 角色页的分组是列表内的二级标题，和上方「全部模型」拉开一点距离 */
+.panel-group-head.nested {
+  margin-top: 4px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.panel-chevron {
+  font-size: 9px;
+  transition: transform 0.15s ease;
+}
+
+.panel-chevron.open {
+  transform: rotate(90deg);
+}
+
+.panel-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 9px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--panel-fg);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.panel-item:hover {
+  background: var(--hover);
+}
+
+.panel-item.active {
+  background: var(--accent-soft);
+  box-shadow: none;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.panel-item-icon {
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.panel-item.active .panel-item-icon {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.panel-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-item-count {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.panel-group-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-group-count {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* 分组内的 Mod 叶子节点：左侧缩进对齐分组标题，字号略小 */
+.panel-item-leaf {
+  gap: 7px;
+  padding: 6px 9px 6px 25px;
+  font-size: 12.5px;
+}
+
+.panel-mod-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 2px var(--ok-soft);
+}
+
+.panel-mod-dot.off {
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: none;
+}
+
+.app-shell.theme-dark .panel-mod-dot.off {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* 抓取文件的类型点（与 DumpsView 列表里的图标色一致） */
+.panel-dump-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #8c8c8c;
+}
+
+.panel-dump-dot.shader {
+  background: #1677ff;
+}
+
+.panel-dump-dot.texture {
+  background: #722ed1;
+}
+
+.app-shell.theme-dark .panel-dump-dot.shader {
+  background: #4096ff;
+}
+
+.app-shell.theme-dark .panel-dump-dot.texture {
+  background: #b37feb;
+}
+
+/* 日志级别点（颜色由内联样式给出，这里只管形状） */
+.panel-level-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+/* 分区导航点（调试 / 设置） */
+.panel-section-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.panel-item:hover .panel-section-dot,
+.panel-item.active .panel-section-dot {
+  opacity: 1;
+}
+
+/* 分区锚点滚动定位时给卡片留出上边距 */
+.page-wrap [id] {
+  scroll-margin-top: 8px;
+}
+
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: 26px;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.panel-empty-icon {
+  margin-bottom: 3px;
+  font-size: 22px;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.panel-empty-title {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--panel-fg);
+}
+
+.panel-empty-hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* 拖拽分界热区：骑缝覆盖在分界线上（绝对定位、不占布局列），
+   完全透明只露出面板的那条细线，无 hover 高亮。
+   之前它自带 5px 透明列，壁纸模式下玻璃模糊右缘采样差异会让这 5px
+   显成一条深色带（看起来像两条线 + 空隙），改为骑缝后不再有独立列。 */
+.panel-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -3px;
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+}
+
+/* 拖拽中：全局光标 + 禁止选中，避免拖到 iframe/文本上断掉 */
+body.panel-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* ---------- 内容区 ---------- */
+.stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--stage-bg);
+  /* 每次切页（key=view 重挂）内容卡轻轻浮入 */
+  animation: stage-in 0.22s ease;
+}
+
+@keyframes stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stage-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  /* 顶部让出标题栏（拖拽区 + 窗口按钮） */
+  padding-top: 30px;
+}
+
+.stage .page-wrap {
+  padding: 18px 20px 20px;
+}
+
+/* 首页：内容区直接透出壁纸，文案左上、按钮右下 */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 0;
+  padding: 10px 36px 22px;
+  overflow-y: auto;
+}
+
+.home-copy {
+  max-width: 480px;
+}
+
+.home-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* 首页时内容区不铺底色，直接透出壁纸 / 应用底色 */
+.stage.stage-home {
+  background: transparent;
+}
+
+/* 壁纸主题：三个区域都透出模糊壁纸，白度 / 模糊半径逐栏递减形成过渡
+   （图标栏最蒙、中间栏居中、内容区最清），玻璃层分别画在各自区域上。
+   内容区的玻璃用 ::before 伪元素承载：backdrop-filter 落在 .stage 本体
+   会把它变成 fixed 定位基准， SafeTooltip 的气泡就会错位。 */
+.app-shell.has-wallpaper .sidebar {
+  background: transparent;
+}
+
+.app-shell.has-wallpaper .rail {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(30px) saturate(1.3);
+  -webkit-backdrop-filter: blur(30px) saturate(1.3);
+}
+
+.app-shell.has-wallpaper .panel {
+  background: rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  /* panel-in 是 opacity 动画：opacity < 1 时该元素成为 backdrop 根，
+     玻璃层会采样不到壁纸闪一下，壁纸模式下关闭入场动画 */
+  animation: none;
+}
+
+.app-shell.has-wallpaper .stage {
+  background: transparent;
+  animation: none;
+}
+
+.app-shell.has-wallpaper .stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+/* 内容本体抬到玻璃层之上 */
+.app-shell.has-wallpaper .stage > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 首页直接透出壁纸，不铺玻璃 */
+.app-shell.has-wallpaper .stage.stage-home::before {
+  content: none;
+}
+
+/* 滚动条：细一点，跟面板同调 */
+.panel-list::-webkit-scrollbar,
+.stage ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.panel-list::-webkit-scrollbar-thumb,
+.stage ::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.panel-list::-webkit-scrollbar-track,
+.stage ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-shell.theme-dark .panel-list::-webkit-scrollbar-thumb,
+.app-shell.theme-dark .stage ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}

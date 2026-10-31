@@ -1,4 +1,7 @@
-//! 3DMigoto 调试开关：直接读写游戏目录下的 d3dx.ini
+//! 3DMigoto 调试开关：读写 NSMMI 工作目录下的 d3dx.ini
+//!
+//! 注入式加载下 ini 在 NSMMI 侧（`%APPDATA%\NSMMI\Loader\d3dx.ini`），
+//! 游戏目录零文件。
 //!
 //! - 狩猎模式：[Hunting] hunting = 2（0 为关闭），游戏内标记着色用于定位模型
 //! - 详细日志：[Logging] log = 2（0 为关闭），输出警告与错误日志
@@ -14,13 +17,14 @@ pub struct DebugState {
     pub logging: bool,
 }
 
-fn ini_path(game_root: &Path) -> std::path::PathBuf {
-    game_root.join(INI_FILE)
+fn ini_path(_game_root: &Path) -> std::path::PathBuf {
+    crate::paths::d3m_dir().join(INI_FILE)
 }
 
 fn read_ini(game_root: &Path) -> Result<String, String> {
-    fs::read_to_string(ini_path(game_root))
-        .map_err(|_| "未找到 d3dx.ini，请先在「设置」中安装加载器".to_string())
+    fs::read_to_string(ini_path(game_root)).map_err(|_| {
+        "未找到 d3dx.ini，请先在「设置」中点「安装 / 更新」准备工作目录".to_string()
+    })
 }
 
 /// 读取当前调试开关状态

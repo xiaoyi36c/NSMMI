@@ -7,10 +7,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import {
-  FolderOpenOutlined,
-  RocketOutlined,
-} from "@ant-design/icons";
+import { FolderOpenOutlined, RocketOutlined } from "@ant-design/icons";
 
 import type { BusyAction, LoaderUpdateInfo, Status } from "../types";
 
@@ -26,8 +23,9 @@ interface GameCardProps {
   onBrowse: () => void;
   onInstall: () => void;
   onLaunch: () => void;
+  onRestore: () => void;
   onUninstall: () => void;
-  onOpenMods: () => void;
+  onOpenMod: () => void;
   onOpenShaderFixes: () => void;
   onOpenGameDir: () => void;
 }
@@ -44,8 +42,9 @@ export const GameCard = memo(function GameCard({
   onBrowse,
   onInstall,
   onLaunch,
+  onRestore,
   onUninstall,
-  onOpenMods,
+  onOpenMod,
   onOpenShaderFixes,
   onOpenGameDir,
 }: GameCardProps) {
@@ -57,9 +56,15 @@ export const GameCard = memo(function GameCard({
     pathValid === true
       ? {
           type: "success" as const,
-          text: status.installed
-            ? "已安装"
-            : `已找到 ${gameExe}，未安装加载器`,
+          text: !status.installed
+            ? `已找到 ${gameExe}，尚未准备加载器`
+            : status.modLoaded
+              ? "3DMigoto 已注入游戏进程，Mod 生效中"
+              : status.injected
+                ? "加载器已注入，等待游戏加载（进入游戏后生效）"
+                : status.legacyResident
+                  ? "检测到旧版常驻加载器：点「重新准备」把它们撤出游戏目录"
+                  : "已就绪：点「启动游戏」把 3DMigoto 注入游戏进程，游戏目录不落文件",
         }
       : pathValid === false
         ? {
@@ -80,10 +85,16 @@ export const GameCard = memo(function GameCard({
             <Tag color="processing">3DMigoto 可更新 {loaderUpdate.latest}</Tag>
           )}
           {status.gameRunning && <Tag color="warning">游戏运行中</Tag>}
+          {status.injected && (
+            <Tag color={status.modLoaded ? "success" : "processing"}>
+              {status.modLoaded ? "Mod 已加载" : "已注入"}
+            </Tag>
+          )}
+          {status.legacyResident && <Tag color="error">常驻残留</Tag>}
           {status.installed ? (
-            <Tag color="success">已安装</Tag>
+            <Tag color="success">已就绪</Tag>
           ) : (
-            <Tag>未安装</Tag>
+            <Tag>未准备</Tag>
           )}
         </Space>
       }
@@ -129,11 +140,11 @@ export const GameCard = memo(function GameCard({
               pathValid === false
                 ? `目录下未找到 ${gameExe}`
                 : status.installed
-                  ? "已安装，点击可重新安装或更新加载器"
-                  : "备份原文件并部署加载器"
+                  ? "刷新加载器缓存并迁移 Mod / ShaderFixes"
+                  : "准备工作目录，也可直接点「启动游戏」自动完成"
             }
           >
-            {status.installed ? "已安装" : "安装 / 更新"}
+            {status.installed ? "重新准备" : "准备加载器"}
           </Button>
           <Button
             type="primary"
@@ -141,22 +152,36 @@ export const GameCard = memo(function GameCard({
             icon={<RocketOutlined aria-hidden="true" />}
             onClick={onLaunch}
             loading={busy === "launch"}
-            disabled={locked || !status.installed}
-            title={status.installed ? "启动游戏" : "需先安装加载器"}
+            disabled={locked}
+            title={
+              status.installed
+                ? "把 3DMigoto 注入游戏进程并启动，游戏目录不落文件"
+                : "首次启动会自动准备加载器，然后注入 3DMigoto"
+            }
           >
             启动游戏
           </Button>
+          {status.injected && (
+            <Button
+              onClick={onRestore}
+              loading={busy === "restore"}
+              disabled={locked}
+              title="清理旧版残留在游戏目录里的加载器（已注入的加载器随游戏退出卸载）"
+            >
+              取消注入
+            </Button>
+          )}
           <Button
             danger
             onClick={onUninstall}
             loading={busy === "uninstall"}
             disabled={locked || !status.installed}
-            title={status.installed ? "按安装清单还原原文件" : "当前未安装"}
+            title={status.installed ? "按安装清单还原原文件并清除 NSMMI 目录" : "当前未准备"}
           >
             卸载
           </Button>
-          <Button type="text" onClick={onOpenMods} disabled={!hasPath}>
-            Mods 目录
+          <Button type="text" onClick={onOpenMod} disabled={!hasPath}>
+            Mod 目录
           </Button>
           <Button type="text" onClick={onOpenShaderFixes} disabled={!hasPath}>
             ShaderFixes

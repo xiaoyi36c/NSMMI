@@ -16,6 +16,12 @@ pub struct AppConfig {
     pub font_size: Option<u8>,
     /// 自动更新 3DMigoto 加载器
     pub auto_update: Option<bool>,
+    /// 启动方式：direct（跳过官方启动器）| launcher（经官方启动器自动拉起）| shell | manual
+    pub launch_mode: Option<String>,
+    /// 启动后等待游戏进程出现的超时（秒）
+    pub launch_timeout: Option<u64>,
+    /// 注入方式：direct（远程线程）| hook（全局窗口钩子）
+    pub inject_mode: Option<String>,
     /// 在线更新后的 3DMigoto 版本
     pub loader_version: Option<String>,
     pub version: String,
@@ -30,6 +36,9 @@ impl Default for AppConfig {
             theme: None,
             font_size: None,
             auto_update: None,
+            launch_mode: None,
+            launch_timeout: None,
+            inject_mode: None,
             loader_version: None,
             version: env!("CARGO_PKG_VERSION").to_string(),
             updated: 0,
@@ -93,6 +102,52 @@ pub fn set_ui_settings(
     cfg.theme = Some(theme.to_string());
     cfg.font_size = Some(font_size);
     cfg.auto_update = Some(auto_update);
+    cfg.updated = now_secs();
+    store(app, &cfg)
+}
+
+/// 启动方式与超时（direct | launcher | shell | manual）
+pub fn launch_settings(app: &AppHandle) -> (String, u64) {
+    let cfg = load(app);
+    let mode = match cfg.launch_mode.as_deref() {
+        Some("launcher") => "launcher",
+        Some("shell") => "shell",
+        Some("manual") => "manual",
+        _ => "direct",
+    };
+    (mode.to_string(), cfg.launch_timeout.unwrap_or(30).clamp(10, 300))
+}
+
+pub fn set_launch_settings(app: &AppHandle, mode: &str, timeout: u64) -> Result<(), String> {
+    let mode = match mode {
+        "launcher" => "launcher",
+        "shell" => "shell",
+        "manual" => "manual",
+        _ => "direct",
+    };
+    let mut cfg = load(app);
+    cfg.launch_mode = Some(mode.to_string());
+    cfg.launch_timeout = Some(timeout.clamp(10, 300));
+    cfg.updated = now_secs();
+    store(app, &cfg)
+}
+
+/// 注入方式（direct | hook）
+pub fn inject_mode(app: &AppHandle) -> String {
+    let cfg = load(app);
+    match cfg.inject_mode.as_deref() {
+        Some("hook") => "hook".to_string(),
+        _ => "direct".to_string(),
+    }
+}
+
+pub fn set_inject_mode(app: &AppHandle, mode: &str) -> Result<(), String> {
+    let mode = match mode {
+        "hook" => "hook",
+        _ => "direct",
+    };
+    let mut cfg = load(app);
+    cfg.inject_mode = Some(mode.to_string());
     cfg.updated = now_secs();
     store(app, &cfg)
 }

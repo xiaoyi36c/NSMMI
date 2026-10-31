@@ -1,0 +1,4 @@
+# 静态链接 CRT：这个 dll 会被注入到任意进程（包括游戏进程），
+# 不能指望目标进程里有 vcruntime140.dll / msvcp140.dll。
+[build]
+rustflags = ["-C", "target-feature=+crt-static"]

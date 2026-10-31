@@ -37,9 +37,9 @@
     "active": true,
     "targets": ["nsis"],
     "category": "Utility",
-    "copyright": "NSMMI (基于 3DMigoto 1.4.9, GPL)",
+    "copyright": "NSMMI (加载器基于 XXMI Libs / 3DMigoto fork, GPL)",
     "shortDescription": "逆水寒 Model Importer",
-    "longDescription": "参考 XXMI-Launcher 架构的本地 mod 管理器，加载器基于 3DMigoto 1.4.9。仅供本地学习研究，请自行评估反作弊风险。",
+    "longDescription": "参考 XXMI-Launcher 架构的本地 mod 管理器，加载器来自 XXMI Libs，以进程注入方式加载。仅供本地学习研究，请自行评估反作弊风险。",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -48,6 +48,6 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "resources": ["../Resources", "../Mods"]
+    "resources": ["../Resources", "../Mod"]
   }
 }

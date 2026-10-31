@@ -1,7 +1,10 @@
 //! 3DMigoto 加载器版本检测与在线更新
 //!
 //! 检测 bo3b/3Dmigoto 的最新 Release；更新包解压到应用配置目录下的
-//! Loader\（打包后资源目录只读，应用数据目录可写），安装时优先使用。
+//! Loader\（打包后资源目录只读，应用数据目录可写），启动时优先使用。
+//!
+//! 注意：`3dmloader.dll`（注入器）不在 3DMigoto 的发布包里，由随包资源提供，
+//! 在线更新不会覆盖它。
 
 use std::fs;
 use std::path::PathBuf;
@@ -16,6 +19,7 @@ use crate::paths;
 /// 随应用分发的 3DMigoto 版本
 pub const BUNDLED_LOADER_VERSION: &str = "1.4.9";
 
+/// 在线更新时需要解压出来的文件（3dmloader.dll 不在此列，随包提供）
 const LOADER_FILES: [&str; 4] = [
     "d3d11.dll",
     "d3dcompiler_46.dll",
@@ -94,18 +98,18 @@ pub fn check(app: &AppHandle) -> Result<UpdateInfo, String> {
 pub fn update(app: &AppHandle) -> Result<Vec<String>, String> {
     let info = check(app)?;
     if !info.has_update {
-        return Ok(vec![format!(
-            "3DMigoto 已是最新版本 {}",
-            info.current
-        )]);
+        return Ok(vec![format!("3DMigoto 已是最新版本 {}", info.current)]);
     }
-    let url = info
-        .asset_url
-        .ok_or_else(|| format!("3DMigoto {} 未提供可下载的 zip 资产", info.latest.clone().unwrap_or_default()))?;
+    let url = info.asset_url.ok_or_else(|| {
+        format!(
+            "加载器 {} 未提供可下载的 zip 资产",
+            info.latest.clone().unwrap_or_default()
+        )
+    })?;
     let latest = info.latest.clone().unwrap_or_default();
 
-    let tmp = std::env::temp_dir().join(format!("nsmmi-3dmigoto-{}.zip", latest));
-    net::download_to(&url, &tmp).map_err(|e| format!("下载 3DMigoto {} 失败: {}", latest, e))?;
+    let tmp = std::env::temp_dir().join(format!("nsmmi-loader-{}.zip", latest));
+    net::download_to(&url, &tmp).map_err(|e| format!("下载加载器 {} 失败: {}", latest, e))?;
 
     let dest = updated_loader_dir(app);
     fs::create_dir_all(&dest).map_err(|e| format!("创建加载器目录失败: {}", e))?;

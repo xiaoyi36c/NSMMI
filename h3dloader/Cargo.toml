@@ -1,0 +1,29 @@
+[package]
+name = "h3dloader"
+version = "1.0.0"
+edition = "2021"
+description = "H3DLoader - NSMMI 自带的 DLL 注入器（Direct 远程线程 / Hook 全局钩子）"
+publish = false
+
+[lib]
+name = "h3dloader"
+crate-type = ["cdylib"]
+
+[dependencies]
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_Diagnostics_Debug",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Memory",
+  "Win32_System_Threading",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = "symbols"

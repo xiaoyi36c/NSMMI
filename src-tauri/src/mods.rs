@@ -5,10 +5,16 @@ use serde::Serialize;
 
 const DISABLED_PREFIX: &str = "DISABLED_";
 
+/// Mod / ShaderFixes 都在 NSMMI 侧的工作目录里（注入式加载，游戏目录零文件），
+/// 因此这里忽略传入的游戏目录，统一指向 3Dm 工作目录
+fn work_dir(_game_root: &Path) -> PathBuf {
+    crate::paths::d3m_dir()
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModInfo {
-    /// 相对 Mods 目录的路径（POSIX 分隔符）
+    /// 相对 Mod 目录的路径（POSIX 分隔符）
     pub name: String,
     /// 文件绝对路径
     pub path: String,
@@ -16,9 +22,9 @@ pub struct ModInfo {
     pub size: u64,
 }
 
-/// 列出游戏目录 Mods 下所有 .ini（递归），停用 = DISABLED_ 前缀
+/// 列出游戏目录 Mod 下所有 .ini（递归），停用 = DISABLED_ 前缀
 pub fn list_mods(game_root: &Path) -> Result<Vec<ModInfo>, String> {
-    let root = game_root.join("Mods");
+    let root = work_dir(game_root).join("Mod");
     if !root.is_dir() {
         return Ok(Vec::new());
     }
@@ -69,7 +75,7 @@ fn collect_mods(dir: &Path, root: &Path, out: &mut Vec<ModInfo>) -> Result<(), S
 /// 切换单个 mod 的启用状态（重命名加/去 DISABLED_ 前缀）
 pub fn toggle_mod(game_root: &Path, name: &str) -> Result<Vec<ModInfo>, String> {
     let relative = name.replace('/', "\\");
-    let target = game_root.join("Mods").join(&relative);
+    let target = work_dir(game_root).join("Mod").join(&relative);
 
     if !target.is_file() {
         return Err(format!("未找到 mod 文件: {}", name));
@@ -108,9 +114,9 @@ pub fn toggle_mod(game_root: &Path, name: &str) -> Result<Vec<ModInfo>, String> 
 
 /// 打开系统文件管理器（Windows 使用 explorer，其他平台交给 opener 插件）
 pub fn mods_dir(game_root: &Path) -> PathBuf {
-    game_root.join("Mods")
+    work_dir(game_root).join("Mod")
 }
 
 pub fn shaderfixes_dir(game_root: &Path) -> PathBuf {
-    game_root.join("ShaderFixes")
+    work_dir(game_root).join("ShaderFixes")
 }

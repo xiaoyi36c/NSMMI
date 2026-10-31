@@ -8,6 +8,8 @@ import type { LogEntry } from "../types";
 interface LogConsoleProps {
   logs: LogEntry[];
   onClear: () => void;
+  /** 空列表文案：区分"没有日志"与"筛选后无结果" */
+  emptyText?: string;
 }
 
 /** 距离底部小于该阈值视为“贴底”，贴底时才自动滚动 */
@@ -27,6 +29,7 @@ const LogLine = memo(function LogLine({ entry }: { entry: LogEntry }) {
 export const LogConsole = memo(function LogConsole({
   logs,
   onClear,
+  emptyText = "暂无日志",
 }: LogConsoleProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
@@ -81,7 +84,7 @@ export const LogConsole = memo(function LogConsole({
       >
         {logs.length === 0 ? (
           <p className="log-line" style={{ color: "rgba(255,255,255,0.3)" }}>
-            暂无日志
+            {emptyText}
           </p>
         ) : (
           logs.map((entry) => <LogLine key={entry.id} entry={entry} />)

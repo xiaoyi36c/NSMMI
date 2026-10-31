@@ -13,7 +13,7 @@ interface ModListProps {
   onOpenFolder: () => void;
 }
 
-/** Mods 列表卡片 */
+/** Mod 列表卡片 */
 export const ModList = memo(function ModList({
   mods,
   busy,
@@ -23,7 +23,7 @@ export const ModList = memo(function ModList({
 }: ModListProps) {
   return (
     <Card
-      title={`Mods (${mods.length})`}
+      title={`Mod (${mods.length})`}
       extra={
         <Button
           type="text"
@@ -35,6 +35,7 @@ export const ModList = memo(function ModList({
         </Button>
       }
       styles={{
+        header: { padding: "0 16px", minHeight: 48 },
         body: {
           padding: 0,
           flex: 1,
@@ -53,18 +54,20 @@ export const ModList = memo(function ModList({
     >
       <div
         className="scroll-paper"
-        style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+        }}
       >
         {mods.length === 0 ? (
-          <div style={{ padding: "32px 24px" }}>
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  将 .ini 与资源放入游戏目录的 Mods\ 即自动加载
-                </Typography.Text>
-              }
-            />
+          <div className="fill-empty">
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={null} />
+            <p className="fill-empty-title">Mod 目录还是空的</p>
+            <p className="fill-empty-hint">放入 .ini 与配套资源后会自动加载</p>
           </div>
         ) : (
           <List
@@ -111,12 +114,12 @@ export const ModList = memo(function ModList({
       <div
         style={{
           flexShrink: 0,
-          padding: 12,
+          padding: "10px 16px 12px",
           borderTop: "1px solid rgba(5,5,5,0.06)",
         }}
       >
         <Button block icon={<FolderOpenOutlined aria-hidden="true" />} onClick={onOpenFolder}>
-          打开 Mods 目录
+          打开 Mod 目录
         </Button>
         <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0, fontSize: 11 }}>
           停用 = 加 DISABLED_ 前缀，游戏内按 F10 重载配置。

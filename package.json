@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "loader": "cargo build --release --manifest-path h3dloader/Cargo.toml && powershell -NoProfile -Command \"Copy-Item -LiteralPath 'h3dloader/target/release/h3dloader.dll' -Destination 'Resources/Loader/h3dloader.dll' -Force\"",
     "icons": "node scripts/generate-icons.mjs",
     "tauri": "tauri"
   },
@@ -27,5 +28,8 @@
     "@vitejs/plugin-react": "^4.4.0",
     "typescript": "^5.8.0",
     "vite": "^6.3.0"
+  },
+  "overrides": {
+    "@rc-component/trigger": "3.9.1"
   }
 }
