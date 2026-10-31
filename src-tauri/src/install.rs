@@ -102,6 +102,14 @@ pub fn install(app: &AppHandle, game_root: &Path) -> Result<Vec<String>, String>
     for sub in ["Mod", "ShaderFixes"] {
         fs::create_dir_all(d3m.join(sub)).map_err(|e| format!("创建 {} 失败: {}", sub, e))?;
     }
+    // 清理历史遗留的大日志（calls=1 排查日志可能膨胀到数 GB）
+    let stale_log = d3m.join("d3d11_log.txt");
+    if stale_log.is_file() {
+        match fs::remove_file(&stale_log) {
+            Ok(()) => log.push("已清理上次运行留下的 d3d11_log.txt".to_string()),
+            Err(_) => log.push("d3d11_log.txt 被占用（游戏未退出？），跳过清理".to_string()),
+        }
+    }
     let readme = resources.join("Mod").join("README.txt");
     let readme_dst = d3m.join("Mod").join("README.txt");
     if readme.is_file() && !readme_dst.is_file() {

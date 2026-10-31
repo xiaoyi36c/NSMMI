@@ -445,6 +445,44 @@ body {
   cursor: not-allowed;
 }
 
+/* 自定义按键模式 */
+.gamekey-head-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.gamekey-edit-btn {
+  padding: 1px 8px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.gamekey-edit-btn:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.14);
+  border-color: rgba(127, 127, 127, 0.5);
+}
+
+.gamekey-edit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gamekey.editing {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.gamekey.capturing {
+  border-color: var(--accent, #1677ff);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.25);
+}
+
 .gamekey-cap {
   display: inline-flex;
   align-items: center;

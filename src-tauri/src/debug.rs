@@ -3,8 +3,8 @@
 //! 注入式加载下 ini 在 NSMMI 侧（`%APPDATA%\NSMMI\Loader\d3dx.ini`），
 //! 游戏目录零文件。
 //!
-//! - 狩猎模式：[Hunting] hunting = 2（0 为关闭），游戏内标记着色用于定位模型
-//! - 详细日志：[Logging] log = 2（0 为关闭），输出警告与错误日志
+//! - 狩猎模式：[Hunting] hunting = 1（0 为关闭），开启后游戏内按 F10 重载即生效（无需重启）
+//! - 详细日志：[Logging] debug = 1（0 为关闭），输出警告与错误日志到 d3d_log.txt
 
 use std::fs;
 use std::path::Path;
@@ -32,15 +32,18 @@ pub fn read_state(game_root: &Path) -> Result<DebugState, String> {
     let raw = read_ini(game_root)?;
     Ok(DebugState {
         hunting: value_enabled(&raw, "Hunting", "hunting"),
-        logging: value_enabled(&raw, "Logging", "log"),
+        logging: value_enabled(&raw, "Logging", "debug"),
     })
 }
 
 /// 设置调试开关并返回新状态
 pub fn set_option(game_root: &Path, option: &str, enabled: bool) -> Result<DebugState, String> {
     let (section, key, value) = match option {
-        "hunting" => ("Hunting", "hunting", if enabled { "2" } else { "0" }),
-        "logging" => ("Logging", "log", if enabled { "2" } else { "0" }),
+        // 写 1（完全启用）：用户在游戏内按 F10 重载后立即生效；
+        // 期间 F4 可随时软开关。写 0 则彻底零开销（登录页实测无卡顿）。
+        "hunting" => ("Hunting", "hunting", if enabled { "1" } else { "0" }),
+        // 3DMigoto 的 [Logging] 没有 "log" 键，警告与错误日志由 debug 控制
+        "logging" => ("Logging", "debug", if enabled { "1" } else { "0" }),
         _ => return Err("未知的调试选项".to_string()),
     };
 

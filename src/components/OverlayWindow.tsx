@@ -347,7 +347,7 @@ export function OverlayWindow() {
                 <div className="overlay-switch-main">
                   <span className="overlay-switch-title">狩猎模式</span>
                   <span className="overlay-switch-desc">
-                    游戏内按 F8 高亮模型 · 需重启游戏生效
+                    开启后游戏内按 F10 开启猎取 · F4 随时开关 · 无需重启
                   </span>
                 </div>
                 <Switch

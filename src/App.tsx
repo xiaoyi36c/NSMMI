@@ -190,6 +190,13 @@ function MainWindow() {
               {view === "home" && (
                 <HomeView
                   onDark={wallpaperOn || dark}
+                  badge={
+                    wallpaperOn
+                      ? launcher.titlebarLight
+                        ? "glass-light"
+                        : "glass-dark"
+                      : "plain"
+                  }
                   status={launcher.status}
                   busy={launcher.busy}
                   version={launcher.info?.version ?? null}

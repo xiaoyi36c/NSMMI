@@ -32,6 +32,12 @@ pub fn vk_for(key: &str) -> Option<u8> {
     }
 
     match name.as_str() {
+        // 小键盘运算键（3DMigoto 顶点缓冲浏览/标记用）
+        "DIVIDE" => Some(0x6F),
+        "MULTIPLY" => Some(0x6A),
+        "SUBTRACT" => Some(0x6D),
+        "ADD" => Some(0x6B),
+        "DECIMAL" => Some(0x6E),
         "PRINTSCREEN" => Some(0x2C),
         "PAUSE" => Some(0x13),
         "HOME" => Some(0x24),

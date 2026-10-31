@@ -514,7 +514,7 @@ body.panel-resizing {
 .home-page {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex: 1;
   min-height: 0;
   padding: 10px 36px 22px;
@@ -523,6 +523,19 @@ body.panel-resizing {
 
 .home-copy {
   max-width: 480px;
+  text-align: right;
+}
+
+/* 按钮区：状态文字叠在按钮上方，右对齐 */
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.home-actions .ant-typography {
+  margin-bottom: 0;
 }
 
 .home-foot {
@@ -531,6 +544,60 @@ body.panel-resizing {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+/* 首页版本徽章：玻璃小胶囊，亮底 / 深色 / 壁纸三套观感 */
+.home-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-family: "Consolas", "Cascadia Mono", monospace;
+  letter-spacing: 0.02em;
+  color: rgba(0, 0, 0, 0.62);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.home-version.on-glass {
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.app-shell.theme-dark .home-version:not(.on-glass):not(.light-wall) {
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+/* 壁纸偏亮：亮玻璃 + 深字，保证可读 */
+.home-version.light-wall {
+  color: rgba(0, 0, 0, 0.66);
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.45);
+}
+
+.home-version .sep {
+  flex-shrink: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
 }
 
 /* 首页时内容区不铺底色，直接透出壁纸 / 应用底色 */

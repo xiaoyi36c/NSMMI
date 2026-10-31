@@ -64,9 +64,9 @@ export interface LogEntry {
 }
 
 export interface DebugState {
-  /** [Hunting] hunting = 2 */
+  /** [Hunting] hunting = 1 */
   hunting: boolean;
-  /** [Logging] log = 2 */
+  /** [Logging] debug = 1 */
   logging: boolean;
 }
 
@@ -84,7 +84,7 @@ export interface LaunchOutcome {
 export interface GameKey {
   /** 稳定标识 */
   id: string;
-  /** 按键名（发送时使用，如 F8 / Numpad1） */
+  /** 按键名（发送时使用，如 F4 / Numpad1 / Divide） */
   key: string;
   /** 键帽显示文本 */
   cap: string;

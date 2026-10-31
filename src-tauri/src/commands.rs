@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -192,15 +193,33 @@ pub fn read_loader_log(game_root: String, lines: Option<usize>) -> CmdResult<Vec
     let _ = &game_root;
     let path = paths::d3m_dir().join("d3d11_log.txt");
     let take = lines.unwrap_or(40).min(400);
-    let raw = std::fs::read_to_string(&path)
+
+    // 只 seek 读取文件尾部 64KB：开启 calls 日志时文件每秒膨胀数 MB，
+    // 整文件读入会拖死悬浮窗（未响应）。seek 读与文件总体积无关。
+    const TAIL: u64 = 64 * 1024;
+    let mut file = std::fs::File::open(&path)
         .map_err(|_| "未找到 d3d11_log.txt（需开启详细日志并在游戏内产生输出）".to_string())?;
-    let start = raw.len().saturating_sub(64 * 1024);
-    let tail = &raw[start..];
+    let len = file
+        .metadata()
+        .map_err(|e| format!("读取日志信息失败: {}", e))?
+        .len();
+    let start = len.saturating_sub(TAIL);
+    file.seek(SeekFrom::Start(start))
+        .map_err(|e| format!("读取日志失败: {}", e))?;
+    let mut buf = Vec::with_capacity((len - start) as usize);
+    file.read_to_end(&mut buf)
+        .map_err(|e| format!("读取日志失败: {}", e))?;
+
+    let tail = String::from_utf8_lossy(&buf);
     let mut out: Vec<String> = tail
         .lines()
         .filter(|l| !l.trim().is_empty())
         .map(|l| l.to_string())
         .collect();
+    // 从中间起读时首行大概率是半行，丢弃
+    if start > 0 && !out.is_empty() {
+        out.remove(0);
+    }
     if out.len() > take {
         out = out.split_off(out.len() - take);
     }

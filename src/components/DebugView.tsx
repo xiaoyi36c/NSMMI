@@ -83,15 +83,15 @@ export const DebugView = memo(function DebugView({
               checked={debug.hunting}
               disabled={busy}
               onChange={() => onToggleDebug("hunting")}
-              title="狩猎模式（hunting = 2）"
-              desc="游戏内按 F8 周期性高亮着色模型，用于定位 mod 目标；重启游戏后生效。"
+              title="狩猎模式（hunting = 1）"
+              desc="打开开关后，游戏内按 F10 重载配置即开启猎取（无需重启），F4 可随时开关；关闭开关后同样按 F10 生效。平时零开销。"
             />
             <SwitchRow
               checked={debug.logging}
               disabled={busy}
               onChange={() => onToggleDebug("logging")}
-              title="详细日志（log = 2）"
-              desc="输出 3DMigoto 警告与错误日志，便于排查 shader/mod 问题；重启游戏后生效。"
+              title="详细日志（debug = 1）"
+              desc="输出警告与错误日志到 d3d_log.txt，便于排查 shader/mod 问题；重启游戏后生效。"
             />
           </Space>
         )}
