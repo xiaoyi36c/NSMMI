@@ -67,10 +67,15 @@ pub fn install(app: &AppHandle, game_root: &Path) -> Result<Vec<String>, String>
     }
 
     let resources = paths::resources_dir(app);
-    let loader_dir = resources.join("Loader");
+    let loader_dir = paths::loader_dir(app);
     if !loader_dir.is_dir() {
         return Err(format!("安装包缺少加载器目录: {}", loader_dir.display()));
     }
+
+    log.push(format!(
+        "加载器版本: 3DMigoto {}",
+        crate::loader::installed_version(app)
+    ));
 
     let backup_dir = game_root.join(NSMMI_DIR).join("backup");
     fs::create_dir_all(&backup_dir).map_err(|e| format!("创建备份目录失败: {}", e))?;

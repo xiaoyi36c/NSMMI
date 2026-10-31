@@ -154,11 +154,16 @@ export default function App() {
               <SettingsView
                 theme={launcher.uiTheme}
                 fontSize={launcher.fontSize}
+                autoUpdate={launcher.autoUpdate}
+                loaderUpdate={launcher.loaderUpdate}
                 wallpaper={launcher.wallpaper}
                 busy={launcher.busy}
                 version={launcher.info?.version ?? null}
                 onThemeChange={launcher.setUiTheme}
                 onFontSizeChange={launcher.setFontSize}
+                onAutoUpdateChange={launcher.setAutoUpdate}
+                onCheckUpdate={launcher.checkLoaderUpdate}
+                onUpdateLoader={launcher.performLoaderUpdate}
                 onPickWallpaper={launcher.chooseWallpaper}
                 onClearWallpaper={launcher.clearWallpaper}
               >
@@ -169,6 +174,7 @@ export default function App() {
                   status={launcher.status}
                   gameExe={launcher.info?.gameExe ?? DEFAULT_GAME_EXE}
                   busy={launcher.busy}
+                  loaderUpdate={launcher.loaderUpdate}
                   onDetect={launcher.detect}
                   onBrowse={launcher.browse}
                   onInstall={launcher.install}

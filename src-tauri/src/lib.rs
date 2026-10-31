@@ -3,7 +3,9 @@ mod config;
 mod debug;
 mod game;
 mod install;
+mod loader;
 mod mods;
+mod net;
 mod paths;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,6 +27,8 @@ pub fn run() {
             commands::set_ui_settings,
             commands::get_debug_state,
             commands::set_debug_option,
+            commands::check_loader_update,
+            commands::update_loader,
             commands::install,
             commands::uninstall,
             commands::launch_game,

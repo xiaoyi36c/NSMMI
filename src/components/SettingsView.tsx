@@ -1,17 +1,31 @@
 import type { ReactNode } from "react";
-import { Button, Card, Segmented, Slider, Space, Typography } from "antd";
-import { PictureOutlined } from "@ant-design/icons";
+import {
+  Alert,
+  Button,
+  Card,
+  Segmented,
+  Slider,
+  Space,
+  Switch,
+  Typography,
+} from "antd";
+import { CloudDownloadOutlined, PictureOutlined } from "@ant-design/icons";
 
-import type { BusyAction, UiTheme } from "../types";
+import type { BusyAction, LoaderUpdateInfo, UiTheme } from "../types";
 
 interface SettingsViewProps {
   theme: UiTheme;
   fontSize: number;
+  autoUpdate: boolean;
+  loaderUpdate: LoaderUpdateInfo | null;
   wallpaper: string | null;
   busy: BusyAction;
   version: string | null;
   onThemeChange: (theme: UiTheme) => void;
   onFontSizeChange: (size: number) => void;
+  onAutoUpdateChange: (enabled: boolean) => void;
+  onCheckUpdate: () => void;
+  onUpdateLoader: () => void;
   onPickWallpaper: () => void;
   onClearWallpaper: () => void;
   children: ReactNode;
@@ -31,15 +45,20 @@ const THEME_HINTS: Record<UiTheme, string> = {
 
 const FONT_MARKS = { 12: "12", 14: "14", 16: "16", 18: "18" };
 
-/** 设置：游戏目录 + 主题（浅色/深色/自定义）+ 显示（文字大小）+ 关于 */
+/** 设置：游戏目录 + 加载器更新 + 主题 + 显示 + 关于 */
 export function SettingsView({
   theme,
   fontSize,
+  autoUpdate,
+  loaderUpdate,
   wallpaper,
   busy,
   version,
   onThemeChange,
   onFontSizeChange,
+  onAutoUpdateChange,
+  onCheckUpdate,
+  onUpdateLoader,
   onPickWallpaper,
   onClearWallpaper,
   children,
@@ -47,6 +66,72 @@ export function SettingsView({
   return (
     <div className="page-wrap page-scroll">
       {children}
+
+      <Card title="加载器更新">
+        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div>
+              <Typography.Text strong style={{ fontSize: 13 }}>
+                3DMigoto 自动更新
+              </Typography.Text>
+              <br />
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                启动时后台检查 bo3b/3Dmigoto 最新版本，发现新版自动下载
+              </Typography.Text>
+            </div>
+            <Switch checked={autoUpdate} onChange={onAutoUpdateChange} />
+          </div>
+
+          <Space size={8} wrap>
+            <Button
+              icon={<CloudDownloadOutlined aria-hidden="true" />}
+              onClick={onCheckUpdate}
+              loading={busy === "update"}
+            >
+              检查更新
+            </Button>
+            {loaderUpdate?.hasUpdate && (
+              <Button
+                type="primary"
+                onClick={onUpdateLoader}
+                loading={busy === "update"}
+              >
+                更新到 {loaderUpdate.latest}
+              </Button>
+            )}
+          </Space>
+
+          {loaderUpdate?.hasUpdate ? (
+            <Alert
+              type="warning"
+              showIcon
+              message={`发现新版本 ${loaderUpdate.latest}（当前 ${loaderUpdate.current}）`}
+              description={
+                loaderUpdate.assetName ??
+                "更新后需在「设置」中重新执行「安装 / 更新」部署到游戏目录。"
+              }
+            />
+          ) : (
+            loaderUpdate && (
+              <Alert
+                type="success"
+                showIcon
+                message={`已是最新版本 ${loaderUpdate.current}`}
+              />
+            )
+          )}
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            更新只替换本地加载器缓存；部署到游戏目录仍需执行「安装 / 更新」。
+          </Typography.Text>
+        </Space>
+      </Card>
 
       <Card title="主题">
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
@@ -98,6 +183,7 @@ export function SettingsView({
           </Typography.Text>
         </Space>
       </Card>
+
 
       <Card title="关于">
         <Space direction="vertical" size={4}>

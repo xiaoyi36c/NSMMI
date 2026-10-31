@@ -12,8 +12,7 @@ import {
   RocketOutlined,
 } from "@ant-design/icons";
 
-import { formatTime } from "../lib/format";
-import type { BusyAction, Status } from "../types";
+import type { BusyAction, LoaderUpdateInfo, Status } from "../types";
 
 interface GameCardProps {
   path: string;
@@ -22,6 +21,7 @@ interface GameCardProps {
   status: Status;
   gameExe: string;
   busy: BusyAction;
+  loaderUpdate: LoaderUpdateInfo | null;
   onDetect: () => void;
   onBrowse: () => void;
   onInstall: () => void;
@@ -39,6 +39,7 @@ export const GameCard = memo(function GameCard({
   status,
   gameExe,
   busy,
+  loaderUpdate,
   onDetect,
   onBrowse,
   onInstall,
@@ -56,9 +57,9 @@ export const GameCard = memo(function GameCard({
     pathValid === true
       ? {
           type: "success" as const,
-          text: `已找到 ${gameExe}${
-            status.installed ? `，${formatTime(status.installedAt)} 安装` : ""
-          }`,
+          text: status.installed
+            ? "已安装"
+            : `已找到 ${gameExe}，未安装加载器`,
         }
       : pathValid === false
         ? {
@@ -75,6 +76,9 @@ export const GameCard = memo(function GameCard({
       title="游戏目录"
       extra={
         <Space size={8}>
+          {loaderUpdate?.hasUpdate && (
+            <Tag color="processing">3DMigoto 可更新 {loaderUpdate.latest}</Tag>
+          )}
           {status.gameRunning && <Tag color="warning">游戏运行中</Tag>}
           {status.installed ? (
             <Tag color="success">已安装</Tag>
@@ -121,9 +125,15 @@ export const GameCard = memo(function GameCard({
             onClick={onInstall}
             loading={busy === "install"}
             disabled={locked || pathValid === false}
-            title={pathValid === false ? `目录下未找到 ${gameExe}` : "备份原文件并部署加载器"}
+            title={
+              pathValid === false
+                ? `目录下未找到 ${gameExe}`
+                : status.installed
+                  ? "已安装，点击可重新安装或更新加载器"
+                  : "备份原文件并部署加载器"
+            }
           >
-            安装 / 更新
+            {status.installed ? "已安装" : "安装 / 更新"}
           </Button>
           <Button
             type="primary"

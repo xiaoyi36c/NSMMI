@@ -7,6 +7,7 @@ use crate::config;
 use crate::debug;
 use crate::game;
 use crate::install;
+use crate::loader;
 use crate::mods;
 use crate::paths;
 
@@ -103,11 +104,13 @@ pub fn set_wallpaper(app: AppHandle, path: Option<String>) -> CmdResult<()> {
     config::set_wallpaper(&app, path)
 }
 
-/// 界面设置（主题 + 字号）
+/// 界面设置（主题 + 字号 + 自动更新）
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UiSettings {
     pub theme: String,
     pub font_size: u8,
+    pub auto_update: bool,
 }
 
 #[tauri::command]
@@ -116,12 +119,30 @@ pub fn get_ui_settings(app: AppHandle) -> UiSettings {
     UiSettings {
         theme: cfg.theme.unwrap_or_else(|| "light".to_string()),
         font_size: cfg.font_size.unwrap_or(14),
+        auto_update: cfg.auto_update.unwrap_or(false),
     }
 }
 
 #[tauri::command]
-pub fn set_ui_settings(app: AppHandle, theme: String, font_size: u8) -> CmdResult<()> {
-    config::set_ui_settings(&app, &theme, font_size)
+pub fn set_ui_settings(
+    app: AppHandle,
+    theme: String,
+    font_size: u8,
+    auto_update: bool,
+) -> CmdResult<()> {
+    config::set_ui_settings(&app, &theme, font_size, auto_update)
+}
+
+/// 检查 3DMigoto 更新
+#[tauri::command]
+pub fn check_loader_update(app: AppHandle) -> CmdResult<loader::UpdateInfo> {
+    loader::check(&app)
+}
+
+/// 在线更新 3DMigoto 加载器
+#[tauri::command]
+pub fn update_loader(app: AppHandle) -> CmdResult<Vec<String>> {
+    loader::update(&app)
 }
 
 /// 3DMigoto 调试开关当前状态（读 d3dx.ini）

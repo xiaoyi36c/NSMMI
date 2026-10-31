@@ -5,6 +5,7 @@ import type {
   AppInfo,
   DebugOption,
   DebugState,
+  LoaderUpdateInfo,
   ModItem,
   Status,
   UiSettings,
@@ -50,21 +51,31 @@ export const api = {
   pickWallpaper: () => guard(() => invoke<string | null>("pick_wallpaper")),
   getUiSettings: () =>
     guard(async () => {
-      const raw = await invoke<{ theme: string; font_size: number }>("get_ui_settings");
-      return normalizeUiSettings(raw.theme, raw.font_size);
+      const raw = await invoke<{ theme: string; font_size: number; auto_update: boolean }>(
+        "get_ui_settings",
+      );
+      return normalizeUiSettings(raw.theme, raw.font_size, raw.auto_update);
     }),
-  setUiSettings: (theme: string, fontSize: number) =>
-    guard(() => invoke<void>("set_ui_settings", { theme, fontSize })),
+  setUiSettings: (theme: string, fontSize: number, autoUpdate: boolean) =>
+    guard(() => invoke<void>("set_ui_settings", { theme, fontSize, autoUpdate })),
   getDebugState: (gameRoot: string) =>
     guard(() => invoke<DebugState>("get_debug_state", { gameRoot })),
   setDebugOption: (gameRoot: string, option: DebugOption, enabled: boolean) =>
     guard(() => invoke<DebugState>("set_debug_option", { gameRoot, option, enabled })),
+  checkLoaderUpdate: () =>
+    guard(() => invoke<LoaderUpdateInfo>("check_loader_update")),
+  updateLoader: () => guard(() => invoke<string[]>("update_loader")),
 };
 
-function normalizeUiSettings(theme: string, fontSize: number): UiSettings {
+function normalizeUiSettings(
+  theme: string,
+  fontSize: number,
+  autoUpdate: boolean,
+): UiSettings {
   return {
     theme: theme === "dark" || theme === "custom" ? theme : "light",
     fontSize: Math.min(18, Math.max(12, Math.round(fontSize) || 14)),
+    autoUpdate: Boolean(autoUpdate),
   };
 }
 

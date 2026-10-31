@@ -14,6 +14,10 @@ pub struct AppConfig {
     pub theme: Option<String>,
     /// 界面基准字号（12–18）
     pub font_size: Option<u8>,
+    /// 自动更新 3DMigoto 加载器
+    pub auto_update: Option<bool>,
+    /// 在线更新后的 3DMigoto 版本
+    pub loader_version: Option<String>,
     pub version: String,
     pub updated: u64,
 }
@@ -25,6 +29,8 @@ impl Default for AppConfig {
             wallpaper_path: None,
             theme: None,
             font_size: None,
+            auto_update: None,
+            loader_version: None,
             version: env!("CARGO_PKG_VERSION").to_string(),
             updated: 0,
         }
@@ -70,8 +76,13 @@ pub fn set_wallpaper(app: &AppHandle, wallpaper_path: Option<String>) -> Result<
     store(app, &cfg)
 }
 
-/// 保存界面设置（主题 + 字号），非法主题回退 light
-pub fn set_ui_settings(app: &AppHandle, theme: &str, font_size: u8) -> Result<(), String> {
+/// 保存界面设置（主题 + 字号 + 自动更新），非法主题回退 light
+pub fn set_ui_settings(
+    app: &AppHandle,
+    theme: &str,
+    font_size: u8,
+    auto_update: bool,
+) -> Result<(), String> {
     let theme = match theme {
         "dark" | "custom" => theme,
         _ => "light",
@@ -81,6 +92,22 @@ pub fn set_ui_settings(app: &AppHandle, theme: &str, font_size: u8) -> Result<()
     let mut cfg = load(app);
     cfg.theme = Some(theme.to_string());
     cfg.font_size = Some(font_size);
+    cfg.auto_update = Some(auto_update);
     cfg.updated = now_secs();
     store(app, &cfg)
+}
+
+/// 记录在线更新后的 3DMigoto 版本
+pub fn set_loader_version(app: &AppHandle, version: &str) -> Result<(), String> {
+    let mut cfg = load(app);
+    cfg.loader_version = Some(version.to_string());
+    cfg.updated = now_secs();
+    store(app, &cfg)
+}
+
+/// 刷新 updated 时间戳（由更新流程调用）
+pub fn set_updated(app: &AppHandle) {
+    let mut cfg = load(app);
+    cfg.updated = now_secs();
+    let _ = store(app, &cfg);
 }

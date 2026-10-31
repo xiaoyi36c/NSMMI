@@ -8,6 +8,7 @@ import type {
   BusyAction,
   DebugOption,
   DebugState,
+  LoaderUpdateInfo,
   LogEntry,
   LogLevel,
   ModItem,
@@ -69,19 +70,24 @@ export function useLauncher() {
   const [wallpaper, setWallpaper] = useState<string | null>(null);
   const [uiTheme, setUiThemeState] = useState<UiTheme>("light");
   const [fontSize, setFontSizeState] = useState(14);
+  const [autoUpdate, setAutoUpdateState] = useState(false);
+  const [loaderUpdate, setLoaderUpdate] = useState<LoaderUpdateInfo | null>(null);
   const [debug, setDebug] = useState<DebugState | null>(null);
   const [busy, setBusy] = useState<BusyAction>(null);
 
   // 事件回调里读取最新设置值
   const uiThemeRef = useRef<UiTheme>("light");
   const fontSizeRef = useRef(14);
+  const autoUpdateRef = useRef(false);
   const debugRef = useRef<DebugState | null>(null);
 
   const loadUiSettings = useCallback((next: UiSettings) => {
     uiThemeRef.current = next.theme;
     fontSizeRef.current = next.fontSize;
+    autoUpdateRef.current = next.autoUpdate;
     setUiThemeState(next.theme);
     setFontSizeState(next.fontSize);
+    setAutoUpdateState(next.autoUpdate);
   }, []);
 
   // 事件回调里读取最新路径；用 effect 同步而非渲染期写 ref（并发渲染安全）
@@ -237,6 +243,10 @@ export function useLauncher() {
       setWallpaper(wallpaperPath);
       if (ui) {
         loadUiSettings(ui);
+        // 自动更新开启时后台检查并静默更新 3DMigoto
+        if (ui.autoUpdate) {
+          autoUpdateFlow();
+        }
       }
 
       if (appInfo) {
@@ -473,26 +483,95 @@ export function useLauncher() {
   const applyUiSettings = useCallback(
     (next: UiSettings) => {
       loadUiSettings(next);
-      api.setUiSettings(next.theme, next.fontSize).catch((error: unknown) => {
-        push(`保存界面设置失败: ${toErrorMessage(error)}`, "warn");
-      });
+      api
+        .setUiSettings(next.theme, next.fontSize, next.autoUpdate)
+        .catch((error: unknown) => {
+          push(`保存界面设置失败: ${toErrorMessage(error)}`, "warn");
+        });
     },
     [loadUiSettings, push],
   );
 
   const setUiTheme = useCallback(
     (theme: UiTheme) => {
-      applyUiSettings({ theme, fontSize: fontSizeRef.current });
+      applyUiSettings({
+        theme,
+        fontSize: fontSizeRef.current,
+        autoUpdate: autoUpdateRef.current,
+      });
     },
     [applyUiSettings],
   );
 
   const setFontSize = useCallback(
     (size: number) => {
-      applyUiSettings({ theme: uiThemeRef.current, fontSize: size });
+      applyUiSettings({ theme: uiThemeRef.current, fontSize: size, autoUpdate: autoUpdateRef.current });
     },
     [applyUiSettings],
   );
+
+  const setAutoUpdate = useCallback(
+    (enabled: boolean) => {
+      applyUiSettings({ theme: uiThemeRef.current, fontSize: fontSizeRef.current, autoUpdate: enabled });
+      push(enabled ? "已开启 3DMigoto 自动更新" : "已关闭 3DMigoto 自动更新");
+    },
+    [applyUiSettings, push],
+  );
+
+  /** 检查 3DMigoto 更新（手动） */
+  const checkLoaderUpdate = useCallback(() => {
+    return run("update", async () => {
+      try {
+        const info = await api.checkLoaderUpdate();
+        setLoaderUpdate(info);
+        if (info.hasUpdate) {
+          push(`发现 3DMigoto 新版本: ${info.latest}（当前 ${info.current}），可在设置中更新`, "warn");
+        } else {
+          push(`3DMigoto 已是最新版本 ${info.current}`, "ok");
+        }
+      } catch (error) {
+        push(`检查更新失败: ${toErrorMessage(error)}`, "error");
+      }
+    });
+  }, [run, push]);
+
+  /** 执行 3DMigoto 在线更新 */
+  const performLoaderUpdate = useCallback(() => {
+    return run("update", async () => {
+      try {
+        const lines = await api.updateLoader();
+        pushMany(lines, "ok");
+        const info = await api.checkLoaderUpdate().catch(() => null);
+        if (info) {
+          setLoaderUpdate(info);
+        }
+      } catch (error) {
+        push(`更新 3DMigoto 失败: ${toErrorMessage(error)}`, "error");
+      }
+    });
+  }, [run, push, pushMany]);
+
+  /** 自动更新流程：启动时后台检查并静默更新 */
+  const autoUpdateFlow = useCallback(() => {
+    void (async () => {
+      try {
+        const info = await api.checkLoaderUpdate();
+        setLoaderUpdate(info);
+        if (!info.hasUpdate) {
+          return;
+        }
+        push(`发现 3DMigoto 新版本 ${info.latest}，正在自动更新…`, "warn");
+        const lines = await api.updateLoader();
+        pushMany(lines, "ok");
+        const refreshed = await api.checkLoaderUpdate().catch(() => null);
+        if (refreshed) {
+          setLoaderUpdate(refreshed);
+        }
+      } catch (error) {
+        push(`自动检查更新失败: ${toErrorMessage(error)}`, "warn");
+      }
+    })();
+  }, [push, pushMany]);
 
   return {
     info,
@@ -520,8 +599,13 @@ export function useLauncher() {
     clearWallpaper,
     uiTheme,
     fontSize,
+    autoUpdate,
     setUiTheme,
     setFontSize,
+    setAutoUpdate,
+    loaderUpdate,
+    checkLoaderUpdate,
+    performLoaderUpdate,
     debug,
     toggleDebug,
   };

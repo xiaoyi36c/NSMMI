@@ -48,6 +48,7 @@ export type BusyAction =
   | "toggle"
   | "wallpaper"
   | "debug"
+  | "update"
   | null;
 
 /** 侧边菜单对应的页面 */
@@ -59,4 +60,14 @@ export type UiTheme = "light" | "dark" | "custom";
 export interface UiSettings {
   theme: UiTheme;
   fontSize: number;
+  autoUpdate: boolean;
+}
+
+/** 3DMigoto 更新检测结果 */
+export interface LoaderUpdateInfo {
+  current: string;
+  latest: string | null;
+  hasUpdate: boolean;
+  assetName: string | null;
+  assetUrl: string | null;
 }

@@ -12,6 +12,16 @@ pub fn config_file(app: &AppHandle) -> PathBuf {
     config_dir(app).join("config.json")
 }
 
+/// 加载器来源目录：优先使用在线更新后的 Loader\（应用数据目录），
+/// 否则回退到随包 Resources\Loader
+pub fn loader_dir(app: &AppHandle) -> PathBuf {
+    let updated = config_dir(app).join("Loader");
+    if updated.join("d3d11.dll").is_file() {
+        return updated;
+    }
+    resources_dir(app).join("Loader")
+}
+
 /// 定位随安装包分发的 Resources 目录：
 /// 打包后位于 <resource_dir>/Resources；开发期 exe 在 src-tauri/target/debug/，
 /// 需向上逐级回退到项目根的 Resources
