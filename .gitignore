@@ -1,0 +1,20 @@
+# ---- 依赖与产物 ----
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/bin/
+
+# ---- 3DMigoto 1.4.9 构建产物（约 160MB，不入库）----
+build/
+
+# ---- 日志与临时文件 ----
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 编辑器 ----
+.vscode/
+.idea/
+*.swp

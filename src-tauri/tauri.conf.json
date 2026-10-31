@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NSMMI",
+  "version": "1.0.0",
+  "identifier": "NSMMI",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "NSMMI · 逆水寒 Model Importer",
+        "width": 1080,
+        "height": 720,
+        "minWidth": 940,
+        "minHeight": 640,
+        "center": true,
+        "resizable": true,
+        "decorations": false,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
+    },
+    "withGlobalTauri": false
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "category": "Utility",
+    "copyright": "NSMMI (基于 3DMigoto 1.4.9, GPL)",
+    "shortDescription": "逆水寒 Model Importer",
+    "longDescription": "参考 XXMI-Launcher 架构的本地 mod 管理器，加载器基于 3DMigoto 1.4.9。仅供本地学习研究，请自行评估反作弊风险。",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "resources": ["../Resources", "../Mods"]
+  }
+}
