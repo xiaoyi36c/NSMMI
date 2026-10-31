@@ -30,6 +30,15 @@ export interface LogEntry {
   text: string;
 }
 
+export interface DebugState {
+  /** [Hunting] hunting = 2 */
+  hunting: boolean;
+  /** [Logging] log = 2 */
+  logging: boolean;
+}
+
+export type DebugOption = "hunting" | "logging";
+
 export type BusyAction =
   | "detect"
   | "browse"
@@ -38,7 +47,16 @@ export type BusyAction =
   | "launch"
   | "toggle"
   | "wallpaper"
+  | "debug"
   | null;
 
 /** 侧边菜单对应的页面 */
 export type View = "home" | "characters" | "debug" | "settings";
+
+/** 界面主题：浅色 / 深色 / 自定义壁纸 */
+export type UiTheme = "light" | "dark" | "custom";
+
+export interface UiSettings {
+  theme: UiTheme;
+  fontSize: number;
+}

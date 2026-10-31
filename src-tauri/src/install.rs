@@ -149,7 +149,7 @@ pub fn install(app: &AppHandle, game_root: &Path) -> Result<Vec<String>, String>
     Ok(log)
 }
 
-/// 按安装清单精确还原/删除，ShaderFixes 与 Mods 中的用户文件保留
+/// 按安装清单精确还原/删除；除 Mods 外，软件安装的内容（含 ShaderFixes 与 _NSMMI）全部移除
 pub fn uninstall(game_root: &Path) -> Result<Vec<String>, String> {
     let mut log: Vec<String> = Vec::new();
 
@@ -178,15 +178,22 @@ pub fn uninstall(game_root: &Path) -> Result<Vec<String>, String> {
         }
     }
 
-    let manifest_file = manifest_path(game_root);
-    if manifest_file.is_file() {
-        fs::remove_file(&manifest_file).ok();
+    // ShaderFixes 为软件部署的模板目录，整体移除
+    let shaderfixes = game_root.join("ShaderFixes");
+    if shaderfixes.is_dir() {
+        fs::remove_dir_all(&shaderfixes)
+            .map_err(|e| format!("删除 ShaderFixes 失败: {}", e))?;
+        log.push("已删除 ShaderFixes\\".to_string());
     }
 
-    log.push("卸载完成：ShaderFixes\\ 与 Mods\\ 中的用户文件已保留".to_string());
-    log.push(
-        "原版备份保留于 _NSMMI\\backup\\，确认游戏正常后可手动删除整个 _NSMMI 目录".to_string(),
-    );
+    // _NSMMI（安装清单 + 原版备份）一并移除
+    let nsmmi_dir = game_root.join(NSMMI_DIR);
+    if nsmmi_dir.is_dir() {
+        fs::remove_dir_all(&nsmmi_dir).map_err(|e| format!("删除 _NSMMI 失败: {}", e))?;
+        log.push("已删除 _NSMMI\\".to_string());
+    }
+
+    log.push("卸载完成：Mods\\ 中的 mod 完整保留".to_string());
     Ok(log)
 }
 

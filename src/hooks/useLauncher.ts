@@ -6,10 +6,14 @@ import { isTauri, PREVIEW_NOTICE } from "../lib/tauri-env";
 import type {
   AppInfo,
   BusyAction,
+  DebugOption,
+  DebugState,
   LogEntry,
   LogLevel,
   ModItem,
   Status,
+  UiSettings,
+  UiTheme,
 } from "../types";
 
 const EMPTY_STATUS: Status = {
@@ -63,7 +67,22 @@ export function useLauncher() {
   const [path, setPath] = useState("");
   const [pathValid, setPathValid] = useState<boolean | null>(null);
   const [wallpaper, setWallpaper] = useState<string | null>(null);
+  const [uiTheme, setUiThemeState] = useState<UiTheme>("light");
+  const [fontSize, setFontSizeState] = useState(14);
+  const [debug, setDebug] = useState<DebugState | null>(null);
   const [busy, setBusy] = useState<BusyAction>(null);
+
+  // 事件回调里读取最新设置值
+  const uiThemeRef = useRef<UiTheme>("light");
+  const fontSizeRef = useRef(14);
+  const debugRef = useRef<DebugState | null>(null);
+
+  const loadUiSettings = useCallback((next: UiSettings) => {
+    uiThemeRef.current = next.theme;
+    fontSizeRef.current = next.fontSize;
+    setUiThemeState(next.theme);
+    setFontSizeState(next.fontSize);
+  }, []);
 
   // 事件回调里读取最新路径；用 effect 同步而非渲染期写 ref（并发渲染安全）
   const pathRef = useRef(path);
@@ -116,6 +135,61 @@ export function useLauncher() {
     }
   }, []);
 
+  /** 读取 d3dx.ini 调试开关状态（未安装/未选目录时为 null） */
+  const refreshDebug = useCallback(async () => {
+    const gameRoot = pathRef.current.trim();
+    if (!gameRoot) {
+      debugRef.current = null;
+      setDebug(null);
+      return;
+    }
+    try {
+      const next = await api.getDebugState(gameRoot);
+      debugRef.current = next;
+      setDebug(next);
+    } catch {
+      debugRef.current = null;
+      setDebug(null);
+    }
+  }, []);
+
+  // 目录校验通过即刷新调试状态（覆盖启动/检测/浏览所有来源）
+  useEffect(() => {
+    if (pathValid === true) {
+      void refreshDebug();
+    } else {
+      debugRef.current = null;
+      setDebug(null);
+    }
+  }, [path, pathValid, refreshDebug]);
+
+  const toggleDebug = useCallback(
+    (option: DebugOption) => {
+      return run("debug", async () => {
+        const gameRoot = pathRef.current.trim();
+        if (!gameRoot) {
+          return;
+        }
+        const current = debugRef.current;
+        const next = !(option === "hunting" ? current?.hunting : current?.logging);
+        try {
+          const state = await api.setDebugOption(gameRoot, option, next);
+          debugRef.current = state;
+          setDebug(state);
+          push(
+            option === "hunting"
+              ? `狩猎模式已${next ? "开启" : "关闭"}（重启游戏后生效）`
+              : `详细日志已${next ? "开启" : "关闭"}（重启游戏后生效）`,
+            "ok",
+          );
+        } catch (error) {
+          push(toErrorMessage(error), "error");
+        }
+      });
+    },
+    [run, push],
+  );
+
   // 输入停止后校验目录
   useEffect(() => {
     const value = path.trim();
@@ -147,7 +221,7 @@ export function useLauncher() {
         return;
       }
 
-      const [appInfo, current, wallpaperPath] = await Promise.all([
+      const [appInfo, current, wallpaperPath, ui] = await Promise.all([
         api.appInfo().catch((error: unknown) => {
           push(toErrorMessage(error), "error");
           return null;
@@ -157,9 +231,13 @@ export function useLauncher() {
           return null;
         }),
         api.getWallpaper().catch(() => null),
+        api.getUiSettings().catch(() => null),
       ]);
 
       setWallpaper(wallpaperPath);
+      if (ui) {
+        loadUiSettings(ui);
+      }
 
       if (appInfo) {
         setInfo(appInfo);
@@ -265,11 +343,12 @@ export function useLauncher() {
         pushMany(lines, "ok");
         await refreshStatus();
         await loadMods(gameRoot);
+        void refreshDebug();
       } catch (error) {
         push(`安装失败: ${toErrorMessage(error)}`, "error");
       }
     });
-  }, [run, push, pushMany, refreshStatus, loadMods]);
+  }, [run, push, pushMany, refreshStatus, loadMods, refreshDebug]);
 
   const uninstall = useCallback(() => {
     return run("uninstall", async () => {
@@ -283,11 +362,12 @@ export function useLauncher() {
         pushMany(lines, "ok");
         await refreshStatus();
         await loadMods(gameRoot);
+        void refreshDebug();
       } catch (error) {
         push(`卸载失败: ${toErrorMessage(error)}`, "error");
       }
     });
-  }, [run, push, pushMany, refreshStatus, loadMods]);
+  }, [run, push, pushMany, refreshStatus, loadMods, refreshDebug]);
 
   const launchGame = useCallback(() => {
     return run("launch", async () => {
@@ -389,6 +469,31 @@ export function useLauncher() {
     });
   }, [run, push]);
 
+  /** 本地立即生效 + 异步持久化 */
+  const applyUiSettings = useCallback(
+    (next: UiSettings) => {
+      loadUiSettings(next);
+      api.setUiSettings(next.theme, next.fontSize).catch((error: unknown) => {
+        push(`保存界面设置失败: ${toErrorMessage(error)}`, "warn");
+      });
+    },
+    [loadUiSettings, push],
+  );
+
+  const setUiTheme = useCallback(
+    (theme: UiTheme) => {
+      applyUiSettings({ theme, fontSize: fontSizeRef.current });
+    },
+    [applyUiSettings],
+  );
+
+  const setFontSize = useCallback(
+    (size: number) => {
+      applyUiSettings({ theme: uiThemeRef.current, fontSize: size });
+    },
+    [applyUiSettings],
+  );
+
   return {
     info,
     status,
@@ -413,5 +518,11 @@ export function useLauncher() {
     wallpaper,
     chooseWallpaper,
     clearWallpaper,
+    uiTheme,
+    fontSize,
+    setUiTheme,
+    setFontSize,
+    debug,
+    toggleDebug,
   };
 }

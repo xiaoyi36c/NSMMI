@@ -18,17 +18,9 @@ import { SettingsView } from "./components/SettingsView";
 import { TitleBar } from "./components/TitleBar";
 import { DEFAULT_GAME_EXE } from "./constants";
 import { useLauncher } from "./hooks/useLauncher";
+import { wallpaperSrc } from "./lib/api";
 import { isTauri } from "./lib/tauri-env";
 import type { View } from "./types";
-
-/** Ant Design 统一主题：标准大厂蓝，圆角 8 */
-const ANT_THEME = {
-  algorithm: theme.defaultAlgorithm,
-  token: {
-    borderRadius: 8,
-    fontSize: 14,
-  },
-};
 
 const MENU_ITEMS = [
   { key: "home", icon: <HomeOutlined />, label: "首页" },
@@ -58,18 +50,46 @@ export default function App() {
   }, [launcher.uninstall]);
   const toggleCollapsed = useCallback(() => setCollapsed((c) => !c), []);
 
-  // 标题栏透明悬浮仅当首页且铺了壁纸；默认白底时用普通浅色标题栏
-  const overlay = view === "home" && launcher.wallpaper !== null;
+  // 自定义主题且设置了壁纸时才铺背景；深色主题整体切深色算法
+  const bg = wallpaperSrc(launcher.wallpaper);
+  const custom = launcher.uiTheme === "custom";
+  const dark = launcher.uiTheme === "dark";
+  const wallpaperOn = custom && bg !== null;
+  const overlay = wallpaperOn;
 
   return (
-    <ConfigProvider locale={zhCN} theme={ANT_THEME}>
-      <div className="app-shell">
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: { borderRadius: 8, fontSize: launcher.fontSize },
+      }}
+    >
+      <div
+        className={`app-shell${wallpaperOn ? " has-wallpaper" : ""}${
+          dark ? " theme-dark" : ""
+        }`}
+        style={
+          wallpaperOn
+            ? {
+                backgroundImage: `url(${bg})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
         <TitleBar overlay={overlay} onOpenExternal={launcher.openExternal} />
 
         {!isTauri && (
           <p className="preview-banner">
             浏览器预览模式：未检测到 Tauri 运行时，安装、启动等桌面功能不可用。
           </p>
+        )}
+
+        {/* 首页压暗层：窗口级，覆盖侧栏 + 内容区，避免左右明暗接缝 */}
+        {view === "home" && wallpaperOn && (
+          <div aria-hidden="true" className="app-scrim" />
         )}
 
         <div className="app-body">
@@ -98,14 +118,12 @@ export default function App() {
           <div className="app-content">
             {view === "home" && (
               <HomeView
-                wallpaper={launcher.wallpaper}
+                onDark={wallpaperOn || dark}
                 status={launcher.status}
                 busy={launcher.busy}
                 version={launcher.info?.version ?? null}
                 onLaunch={launcher.launchGame}
                 onInstall={launcher.install}
-                onPickWallpaper={launcher.chooseWallpaper}
-                onClearWallpaper={launcher.clearWallpaper}
               />
             )}
 
@@ -121,6 +139,9 @@ export default function App() {
 
             {view === "debug" && (
               <DebugView
+                debug={launcher.debug}
+                busy={launcher.busy !== null}
+                onToggleDebug={launcher.toggleDebug}
                 logs={launcher.logs}
                 onClearLogs={launcher.clearLogs}
                 onOpenMods={launcher.openModsDir}
@@ -131,9 +152,13 @@ export default function App() {
 
             {view === "settings" && (
               <SettingsView
+                theme={launcher.uiTheme}
+                fontSize={launcher.fontSize}
                 wallpaper={launcher.wallpaper}
                 busy={launcher.busy}
                 version={launcher.info?.version ?? null}
+                onThemeChange={launcher.setUiTheme}
+                onFontSizeChange={launcher.setFontSize}
                 onPickWallpaper={launcher.chooseWallpaper}
                 onClearWallpaper={launcher.clearWallpaper}
               >
@@ -168,8 +193,8 @@ export default function App() {
           onCancel={cancelUninstall}
           cancelButtonProps={{ disabled: launcher.busy === "uninstall" }}
         >
-          将按安装清单精确还原或删除加载器文件。ShaderFixes 与 Mods
-          中的用户文件会保留，原版备份保留在 _NSMMI\backup\。
+          将还原或删除加载器文件，并移除 ShaderFixes\ 与 _NSMMI\（含原版备份）；Mods\
+          中的 mod 完整保留。
         </Modal>
       </div>
     </ConfigProvider>

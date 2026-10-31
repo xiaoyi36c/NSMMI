@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod debug;
 mod game;
 mod install;
 mod mods;
@@ -20,6 +21,10 @@ pub fn run() {
             commands::get_wallpaper,
             commands::set_wallpaper,
             commands::pick_wallpaper,
+            commands::get_ui_settings,
+            commands::set_ui_settings,
+            commands::get_debug_state,
+            commands::set_debug_option,
             commands::install,
             commands::uninstall,
             commands::launch_game,

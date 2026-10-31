@@ -10,6 +10,10 @@ pub struct AppConfig {
     pub game_path: Option<String>,
     /// 自定义背景图的本地绝对路径
     pub wallpaper_path: Option<String>,
+    /// 界面主题：light | dark | custom（自定义壁纸）
+    pub theme: Option<String>,
+    /// 界面基准字号（12–18）
+    pub font_size: Option<u8>,
     pub version: String,
     pub updated: u64,
 }
@@ -19,6 +23,8 @@ impl Default for AppConfig {
         Self {
             game_path: None,
             wallpaper_path: None,
+            theme: None,
+            font_size: None,
             version: env!("CARGO_PKG_VERSION").to_string(),
             updated: 0,
         }
@@ -60,6 +66,21 @@ pub fn save_game_path(app: &AppHandle, game_path: &str) -> Result<(), String> {
 pub fn set_wallpaper(app: &AppHandle, wallpaper_path: Option<String>) -> Result<(), String> {
     let mut cfg = load(app);
     cfg.wallpaper_path = wallpaper_path;
+    cfg.updated = now_secs();
+    store(app, &cfg)
+}
+
+/// 保存界面设置（主题 + 字号），非法主题回退 light
+pub fn set_ui_settings(app: &AppHandle, theme: &str, font_size: u8) -> Result<(), String> {
+    let theme = match theme {
+        "dark" | "custom" => theme,
+        _ => "light",
+    };
+    let font_size = font_size.clamp(12, 18);
+
+    let mut cfg = load(app);
+    cfg.theme = Some(theme.to_string());
+    cfg.font_size = Some(font_size);
     cfg.updated = now_secs();
     store(app, &cfg)
 }

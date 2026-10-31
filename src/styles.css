@@ -51,7 +51,7 @@ body {
   color: #d48806;
 }
 
-/* 无边框窗口的自定义标题栏 */
+/* 无边框窗口的自定义标题栏（细条） */
 .titlebar {
   position: relative;
   z-index: 20;
@@ -59,8 +59,8 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  height: 44px;
-  padding: 0 4px 0 12px;
+  height: 34px;
+  padding: 0 2px 0 10px;
   background: #fff;
   border-bottom: 1px solid rgba(5, 5, 5, 0.06);
 }
@@ -73,7 +73,7 @@ body {
 .titlebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   pointer-events: none;
 }
 
@@ -81,18 +81,18 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   background: linear-gradient(135deg, #4096ff, #1668dc);
   color: #fff;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
 }
 
 .titlebar-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: rgba(0, 0, 0, 0.88);
@@ -145,7 +145,7 @@ body {
 }
 
 .titlebar-btn.window {
-  width: 44px;
+  width: 40px;
   padding: 0;
 }
 
@@ -154,8 +154,43 @@ body {
   color: #fff;
 }
 
-/* 主体：左侧菜单 + 内容区 */
+/* 深色主题：标题栏与侧栏跟随暗色 */
+.app-shell.theme-dark {
+  background: #141414;
+}
+
+.app-shell.theme-dark .titlebar {
+  background: #1f1f1f;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-shell.theme-dark .titlebar-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.app-shell.theme-dark .titlebar-btn {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.app-shell.theme-dark .titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.app-shell.theme-dark .sider {
+  background: #141414;
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+.app-shell.theme-dark .sider-trigger {
+  border-top-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 主体：左侧菜单 + 内容区（位于窗口级压暗层之上） */
 .app-body {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex: 1;
   min-height: 0;
@@ -170,6 +205,47 @@ body {
   border-right: 1px solid rgba(5, 5, 5, 0.06);
   transition: width 0.2s ease;
   overflow: hidden;
+}
+
+/* 壁纸模式下侧栏完全融入壁纸：无底色无边框，仅图标悬浮 */
+.app-shell.has-wallpaper .sider {
+  background: transparent;
+  border-right: none;
+}
+
+.app-shell.has-wallpaper .sider-menu {
+  background: transparent;
+}
+
+.app-shell.has-wallpaper .sider-menu .ant-menu-item {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* 图标加投影，保证亮暗壁纸上都清晰 */
+.app-shell.has-wallpaper .sider-menu .ant-menu-item .anticon {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+}
+
+.app-shell.has-wallpaper .sider-menu .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+/* 选中项：白色胶囊 + 蓝图标 */
+.app-shell.has-wallpaper .sider-menu .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.92);
+  color: #1668dc;
+}
+
+.app-shell.has-wallpaper .sider-trigger {
+  color: rgba(255, 255, 255, 0.85);
+  border-top: none;
+}
+
+.app-shell.has-wallpaper .sider-trigger.ant-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .sider.collapsed {
@@ -227,26 +303,18 @@ body {
   overflow: hidden;
 }
 
-.home-default-bg {
+/* 仅在底部叠轻渐变保证文字可读，中部不遮壁纸；窗口级铺满全宽 */
+.app-scrim {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(70% 50% at 50% 0%, #e6f4ff 0%, transparent 60%),
-    #fff;
-}
-
-.home-wallpaper {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.home-scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.12) 55%, rgba(0, 0, 0, 0.18));
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.38),
+    rgba(0, 0, 0, 0.1) 28%,
+    transparent 48%
+  );
 }
 
 .home-content {
@@ -256,6 +324,17 @@ body {
   justify-content: space-between;
   height: 100%;
   padding: 32px 40px;
+}
+
+/* 启动按钮：任何壁纸/状态下都清晰可见 */
+.home-launch.ant-btn-primary:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(22, 104, 220, 0.4);
+}
+
+.home-launch.ant-btn-primary:disabled {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
 .home-bottom {

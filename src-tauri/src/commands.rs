@@ -4,6 +4,7 @@ use serde::Serialize;
 use tauri::AppHandle;
 
 use crate::config;
+use crate::debug;
 use crate::game;
 use crate::install;
 use crate::mods;
@@ -100,6 +101,43 @@ pub fn get_wallpaper(app: AppHandle) -> Option<String> {
 #[tauri::command]
 pub fn set_wallpaper(app: AppHandle, path: Option<String>) -> CmdResult<()> {
     config::set_wallpaper(&app, path)
+}
+
+/// 界面设置（主题 + 字号）
+#[derive(serde::Serialize)]
+pub struct UiSettings {
+    pub theme: String,
+    pub font_size: u8,
+}
+
+#[tauri::command]
+pub fn get_ui_settings(app: AppHandle) -> UiSettings {
+    let cfg = config::load(&app);
+    UiSettings {
+        theme: cfg.theme.unwrap_or_else(|| "light".to_string()),
+        font_size: cfg.font_size.unwrap_or(14),
+    }
+}
+
+#[tauri::command]
+pub fn set_ui_settings(app: AppHandle, theme: String, font_size: u8) -> CmdResult<()> {
+    config::set_ui_settings(&app, &theme, font_size)
+}
+
+/// 3DMigoto 调试开关当前状态（读 d3dx.ini）
+#[tauri::command]
+pub fn get_debug_state(game_root: String) -> CmdResult<debug::DebugState> {
+    debug::read_state(Path::new(&game_root))
+}
+
+/// 切换 3DMigoto 调试开关（hunting | logging）
+#[tauri::command]
+pub fn set_debug_option(
+    game_root: String,
+    option: String,
+    enabled: bool,
+) -> CmdResult<debug::DebugState> {
+    debug::set_option(Path::new(&game_root), &option, enabled)
 }
 
 /// 弹出系统文件选择框挑选背景图

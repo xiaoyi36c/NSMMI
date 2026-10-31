@@ -13,21 +13,39 @@ pub fn config_file(app: &AppHandle) -> PathBuf {
 }
 
 /// 定位随安装包分发的 Resources 目录：
-/// 打包后位于 <resource_dir>/Resources，开发期回退到 <src-tauri>/../Resources
+/// 打包后位于 <resource_dir>/Resources；开发期 exe 在 src-tauri/target/debug/，
+/// 需向上逐级回退到项目根的 Resources
 pub fn resources_dir(app: &AppHandle) -> PathBuf {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.push(resource_dir.join("Resources"));
-        candidates.push(resource_dir.join("..").join("Resources"));
+        // 开发期 resource_dir = target/debug：逐级向上覆盖到项目根
+        let mut parent = resource_dir.clone();
+        for _ in 0..4 {
+            parent = parent.join("..");
+            candidates.push(parent.join("Resources"));
+        }
     }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             candidates.push(dir.join("Resources"));
-            candidates.push(dir.join("..").join("Resources"));
+            let mut parent = dir.to_path_buf();
+            for _ in 0..4 {
+                parent = parent.join("..");
+                candidates.push(parent.join("Resources"));
+            }
         }
     }
-    candidates.push(PathBuf::from("Resources"));
+    // 工作目录兜底
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("Resources"));
+        let mut parent = cwd;
+        for _ in 0..2 {
+            parent = parent.join("..");
+            candidates.push(parent.join("Resources"));
+        }
+    }
 
     for candidate in candidates {
         if candidate.join("Loader").is_dir() || candidate.join("Mods").is_dir() {
